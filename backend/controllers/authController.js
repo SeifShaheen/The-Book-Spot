@@ -125,3 +125,39 @@ exports.getProfile = (req, res) => {
         res.json(results[0]);
     });
 };
+
+// Register Admin (Admin only)
+exports.registerAdmin = (req, res) => {
+    const { username, password, firstName, lastName, email } = req.body;
+
+    // Basic validation
+    if (!username || !password || !email) {
+        return res.status(400).json({ message: 'Username, password, and email are required' });
+    }
+
+    if (username.length < 3) {
+        return res.status(400).json({ message: 'Username must be at least 3 characters' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    // Check if admin exists
+    const checkSql = 'SELECT * FROM Admin WHERE Username = ? OR Email = ?';
+    db.query(checkSql, [username, email], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length > 0) {
+            return res.status(400).json({ message: 'Username or Email already exists' });
+        }
+
+        // Insert Admin
+        const sql = 'INSERT INTO Admin (Username, Password, FirstName, LastName, Email) VALUES (?, ?, ?, ?, ?)';
+        const values = [username, password, firstName || null, lastName || null, email];
+
+        db.query(sql, values, (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.status(201).json({ message: 'Admin registered successfully' });
+        });
+    });
+};

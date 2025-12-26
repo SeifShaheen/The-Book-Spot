@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const BookList = () => {
+    const { user } = useAuth();
     const [books, setBooks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -77,14 +79,25 @@ const BookList = () => {
                         const stock = getStockStatus(book);
                         return (
                             <div key={book.ISBN} className="book-card">
-                                <h3>{book.Title}</h3>
-                                <p>by {book.Authors || 'Unknown Author'}</p>
-                                <p className="category">{book.Category}</p>
-                                <div className="price">${parseFloat(book.Price).toFixed(2)}</div>
-                                <span className={`stock-badge ${stock.class}`}>{stock.text}</span>
-                                <Link to={`/books/${book.ISBN}`} className="btn btn-secondary" style={{ width: '100%', marginTop: '1rem' }}>
-                                    View Details
-                                </Link>
+                                <div className="book-card-content">
+                                    <h3>{book.Title}</h3>
+                                    <p>by {book.Authors || 'Unknown Author'}</p>
+                                    <p className="category">{book.Category}</p>
+                                </div>
+                                <div className="book-card-footer">
+                                    <div className="price">${parseFloat(book.Price).toFixed(2)}</div>
+                                    <span className={`stock-badge ${stock.class}`}>{stock.text}</span>
+                                    <div className="book-card-actions">
+                                        <Link to={`/books/${book.ISBN}`} className="btn btn-secondary">
+                                            View Details
+                                        </Link>
+                                        {user?.role === 'admin' && (
+                                            <Link to={`/admin/edit-book/${book.ISBN}`} className="btn btn-primary">
+                                                Edit
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         );
                     })}

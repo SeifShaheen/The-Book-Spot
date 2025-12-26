@@ -122,6 +122,7 @@ body {
 .nav-link:hover {
     color: var(--primary);
     background: var(--bg-tertiary);
+    transform: scale(1.1);
 }
 
 .admin-link {
@@ -145,18 +146,18 @@ body {
 
 .btn-logout {
     background: none;
-    border: 1px solid var(--border);
+    border: none;
     color: var(--text-secondary);
-    padding: 0.4rem 0.75rem;
+    padding: 0.5rem 1rem;
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: var(--transition);
-    font-size: 0.875rem;
+    font-size: 1rem;
 }
 
 .btn-logout:hover {
-    border-color: var(--danger);
-    color: var(--danger);
+    color: #ffffff;
+    transform: scale(1.1);
 }
 
 .auth-buttons {
@@ -491,6 +492,8 @@ body {
     box-shadow: var(--shadow-sm);
     transition: var(--transition);
     border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
 }
 
 .book-card:hover {
@@ -541,6 +544,28 @@ body {
     color: #b91c1c;
 }
 
+.book-card-content {
+    flex: 1;
+}
+
+.book-card-footer {
+    margin-top: auto;
+}
+
+.book-card-footer .price {
+    margin-bottom: 0.5rem;
+}
+
+.book-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.book-card-actions .btn {
+    flex: 1;
+}
+
 /* ====================================
    FILTERS
    ==================================== */
@@ -552,16 +577,16 @@ body {
     margin-bottom: 2rem;
     display: flex;
     gap: 1rem;
-    flex-wrap: wrap;
-    align-items: center;
+    flex-direction: column;
     box-shadow: var(--shadow-sm);
 }
 
 .filters form {
     display: flex;
     gap: 0.5rem;
-    flex: 1;
-    min-width: 200px;
+    width: 100%;
+    flex-wrap: nowrap;
+    align-items: stretch;
 }
 
 .filters input {
@@ -570,6 +595,15 @@ body {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     font-size: 0.9375rem;
+    min-width: 0;
+    margin: 0;
+}
+
+.filters form .btn {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .filters select {
@@ -577,7 +611,7 @@ body {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     font-size: 0.9375rem;
-    min-width: 150px;
+    width: 100%;
 }
 
 /* ====================================
@@ -818,4 +852,108 @@ tr:hover td {
 .logo-text,
 .auth-container h2 {
     background-clip: text;
+}
+
+/* ====================================
+   CART QUANTITY CONTROLS
+   ==================================== */
+
+.quantity-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.qty-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qty-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.qty-value {
+    min-width: 30px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.btn-remove {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-remove:hover {
+    opacity: 0.85;
+}
+
+/* Cart table specific column alignment */
+.cart-table {
+    background: linear-gradient(145deg, var(--bg-secondary), #f8fafc);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.cart-table th:nth-child(2),
+.cart-table td:nth-child(2),
+.cart-table th:nth-child(3),
+.cart-table td:nth-child(3),
+.cart-table th:nth-child(4),
+.cart-table td:nth-child(4),
+.cart-table th:nth-child(5),
+.cart-table td:nth-child(5) {
+    text-align: center;
+}
+
+/* Cart Summary */
+.cart-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(145deg, var(--bg-secondary), #f8fafc);
+    border-radius: var(--radius-md);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.cart-summary h3 {
+    margin: 0;
+}
+
+/* Checkout Button */
+.btn-checkout {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.875rem 2rem;
+    border-radius: var(--radius-md);
+    font-size: 1.125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-checkout:hover {
+    background: var(--primary-dark);
+    transform: scale(1.05);
 }
