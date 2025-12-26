@@ -6,7 +6,22 @@ exports.register = (req, res) => {
 
     // Basic validation
     if (!username || !password || !email) {
-        return res.status(400).json({ message: 'Please provide required fields' });
+        return res.status(400).json({ message: 'Please provide required fields (username, password, email)' });
+    }
+
+    // Address validation - all required except building number
+    if (!address || !address.street || !address.city || !address.region || !address.postalCode || !address.country) {
+        return res.status(400).json({ message: 'All address fields are required (street, city, region, postal code, country)' });
+    }
+
+    // Postal code validation (5 digits only)
+    if (!/^\d{5}$/.test(address.postalCode)) {
+        return res.status(400).json({ message: 'Postal code must be exactly 5 digits' });
+    }
+
+    // Phone validation (11 digits only, if provided)
+    if (phone && !/^\d{11}$/.test(phone)) {
+        return res.status(400).json({ message: 'Phone number must be exactly 11 digits' });
     }
 
     // Check if user exists
@@ -24,18 +39,14 @@ exports.register = (req, res) => {
 
             const cartId = cartResult.insertId;
 
-            // Insert Customer
+            // Insert Customer with all address fields
             const sql = `INSERT INTO Customer 
-        (Username, Password, FirstName, LastName, Email, Phone, ShippingStreet, ShippingCity, ShippingCountry, CartID) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-            // Note: In production, password should be hashed (e.g., bcrypt). 
-            // For this project, we store plain text as per implied simplicity or use simple hashing if requested.
-            // We will store plain text for now to match the schema directly, but recommend hashing.
+        (Username, Password, FirstName, LastName, Email, Phone, ShippingStreet, ShippingBuildingNo, ShippingCity, ShippingRegion, ShippingPostalCode, ShippingCountry, CartID) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
             const values = [
                 username, password, firstName, lastName, email, phone,
-                address?.street, address?.city, address?.country, cartId
+                address?.street, address?.buildingNo, address?.city, address?.region, address?.postalCode, address?.country, cartId
             ];
 
             db.query(sql, values, (err, result) => {
