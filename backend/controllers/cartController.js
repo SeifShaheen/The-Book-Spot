@@ -18,7 +18,7 @@ exports.getCart = (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const sql = `
-      SELECT ci.ISBN, ci.Quantity, b.Title, b.Price, b.Author, (ci.Quantity * b.Price) as Total
+      SELECT ci.ISBN, ci.Quantity, b.Title, b.Price, (ci.Quantity * b.Price) as Total
       FROM CartItem ci
       JOIN Book b ON ci.ISBN = b.ISBN
       WHERE ci.CartID = ?
@@ -27,8 +27,15 @@ exports.getCart = (req, res) => {
         db.query(sql, [cartId], (err, results) => {
             if (err) return res.status(500).json({ error: err.message });
 
-            const grandTotal = results.reduce((sum, item) => sum + item.Total, 0);
-            res.json({ items: results, grandTotal });
+            // Ensure all values are numbers, not strings
+            const items = results.map(item => ({
+                ...item,
+                Price: parseFloat(item.Price),
+                Total: parseFloat(item.Total)
+            }));
+
+            const grandTotal = parseFloat(items.reduce((sum, item) => sum + item.Total, 0).toFixed(3));
+            res.json({ items, grandTotal });
         });
     });
 };
@@ -75,6 +82,40 @@ exports.removeFromCart = (req, res) => {
         db.query(sql, [cartId, isbn], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Item removed from cart' });
+        });
+    });
+};
+
+// Update Cart Item Quantity
+exports.updateQuantity = (req, res) => {
+    const { username, isbn, change } = req.body; // change: +1 or -1
+
+    getCartId(username, (err, cartId) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // First get current quantity
+        const getSql = 'SELECT Quantity FROM CartItem WHERE CartID = ? AND ISBN = ?';
+        db.query(getSql, [cartId, isbn], (err, results) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (results.length === 0) return res.status(404).json({ message: 'Item not found in cart' });
+
+            const newQuantity = results[0].Quantity + change;
+
+            if (newQuantity <= 0) {
+                // Remove item if quantity becomes 0 or less
+                const deleteSql = 'DELETE FROM CartItem WHERE CartID = ? AND ISBN = ?';
+                db.query(deleteSql, [cartId, isbn], (err) => {
+                    if (err) return res.status(500).json({ error: err.message });
+                    res.json({ message: 'Item removed from cart' });
+                });
+            } else {
+                // Update quantity
+                const updateSql = 'UPDATE CartItem SET Quantity = ? WHERE CartID = ? AND ISBN = ?';
+                db.query(updateSql, [newQuantity, cartId, isbn], (err) => {
+                    if (err) return res.status(500).json({ error: err.message });
+                    res.json({ message: 'Quantity updated', newQuantity });
+                });
+            }
         });
     });
 };

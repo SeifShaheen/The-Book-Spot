@@ -33,6 +33,15 @@ const Cart = () => {
         }
     };
 
+    const updateQuantity = async (isbn, change) => {
+        try {
+            await api.post('/cart/update-quantity', { username: user.Username, isbn, change });
+            fetchCart();
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+        }
+    };
+
     if (!user) return <p>Please login to view cart</p>;
 
     return (
@@ -57,10 +66,16 @@ const Cart = () => {
                                 <tr key={item.ISBN}>
                                     <td>{item.Title}</td>
                                     <td>${item.Price}</td>
-                                    <td>{item.Quantity}</td>
+                                    <td>
+                                        <div className="quantity-controls">
+                                            <button className="qty-btn" onClick={() => updateQuantity(item.ISBN, -1)}>−</button>
+                                            <span className="qty-value">{item.Quantity}</span>
+                                            <button className="qty-btn" onClick={() => updateQuantity(item.ISBN, 1)}>+</button>
+                                        </div>
+                                    </td>
                                     <td>${item.Total}</td>
                                     <td>
-                                        <button onClick={() => removeFromCart(item.ISBN)}>Remove</button>
+                                        <button className="btn-remove" onClick={() => removeFromCart(item.ISBN)}>Remove All</button>
                                     </td>
                                 </tr>
                             ))}
@@ -68,7 +83,7 @@ const Cart = () => {
                     </table>
                     <div className="cart-summary">
                         <h3>Grand Total: ${total}</h3>
-                        <button onClick={() => navigate('/checkout')}>Proceed to Checkout</button>
+                        <button className="btn-checkout" onClick={() => navigate('/checkout')}>Proceed to Checkout</button>
                     </div>
                 </>
             )}

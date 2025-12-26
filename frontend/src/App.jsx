@@ -12,6 +12,8 @@ import AddAuthor from './pages/AddAuthor';
 import AddPublisher from './pages/AddPublisher';
 import AdminReports from './pages/AdminReports';
 import AdminDatabaseView from './pages/AdminDatabaseView';
+import EditBook from './pages/EditBook';
+import AddAdmin from './pages/AddAdmin';
 import OrderHistory from './pages/OrderHistory';
 import Profile from './pages/Profile';
 import Layout from './components/Layout';
@@ -54,6 +56,8 @@ function App() {
                     <Route path="/admin/add-book" element={<ProtectedRoute role="admin"><AddBook /></ProtectedRoute>} />
                     <Route path="/admin/add-author" element={<ProtectedRoute role="admin"><AddAuthor /></ProtectedRoute>} />
                     <Route path="/admin/add-publisher" element={<ProtectedRoute role="admin"><AddPublisher /></ProtectedRoute>} />
+                    <Route path="/admin/edit-book/:isbn" element={<ProtectedRoute role="admin"><EditBook /></ProtectedRoute>} />
+                    <Route path="/admin/add-admin" element={<ProtectedRoute role="admin"><AddAdmin /></ProtectedRoute>} />
                     <Route path="/admin/reports" element={<ProtectedRoute role="admin"><Layout title="Reports"><AdminReports /></Layout></ProtectedRoute>} />
                     <Route path="/admin/database" element={<ProtectedRoute role="admin"><Layout title="Database Viewer"><AdminDatabaseView /></Layout></ProtectedRoute>} />
 

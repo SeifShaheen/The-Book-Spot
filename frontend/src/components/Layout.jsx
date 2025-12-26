@@ -22,7 +22,7 @@ const Layout = ({ children, title }) => {
                         <Link to="/" className="nav-link">Browse</Link>
                         {user ? (
                             <>
-                                <Link to="/cart" className="nav-link">🛒 Cart</Link>
+                                <Link to="/cart" className="nav-link">Cart</Link>
                                 <Link to="/orders" className="nav-link">My Orders</Link>
                                 <Link to="/profile" className="nav-link">Profile</Link>
                                 {user.role === 'admin' && (

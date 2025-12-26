@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
 const adminController = require('../controllers/adminController');
+const authController = require('../controllers/authController');
 
 // Customer Orders moved to /api/orders
 
 // Admin Routes (Should be protected)
+router.post('/register-admin', authController.registerAdmin);
 router.post('/authors', adminController.addAuthor);
 router.get('/authors', adminController.getAuthors);
 router.post('/publishers', adminController.addPublisher);
