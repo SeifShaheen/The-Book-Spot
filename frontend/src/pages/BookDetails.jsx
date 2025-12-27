@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import '../book-details.css';
 
 const BookDetails = () => {
     const { isbn } = useParams();
@@ -9,6 +11,7 @@ const BookDetails = () => {
     const [quantity, setQuantity] = useState(1);
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     useEffect(() => {
         const fetchBook = async () => {
@@ -24,7 +27,7 @@ const BookDetails = () => {
 
     const addToCart = async () => {
         if (!user) {
-            alert('Please login to add items to cart');
+            addToast('Please login to add items to cart', 'info');
             navigate('/login');
             return;
         }
@@ -36,11 +39,11 @@ const BookDetails = () => {
                 quantity: parseInt(quantity),
                 role: user.role
             });
-            alert(response.data.message || 'Added to cart!');
+            addToast(response.data.message || 'Added to cart!', 'success');
         } catch (error) {
             console.error('Error adding to cart:', error);
             const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to add to cart';
-            alert(errorMessage);
+            addToast(errorMessage, 'error');
         }
     };
 
@@ -48,13 +51,14 @@ const BookDetails = () => {
 
     return (
         <div className="book-details">
-            <h2>{book.Title}</h2>
+            <h2 className="book-details-title">{book.Title}</h2>
             <p><strong>ISBN:</strong> {book.ISBN}</p>
-            <p><strong>Category:</strong> {book.Category}</p>
-            <p><strong>Authors:</strong> {book.Authors}</p>
+            {/* <p><strong>Publication year:</strong> {book.Publicationyear}</p> */}
             <p><strong>Publisher:</strong> {book.PublisherName}</p>
+            <p><strong>Authors:</strong> {book.Authors}</p>
+            <p><strong>Category:</strong> {book.Category}</p>
             <p><strong>Price:</strong> ${book.Price}</p>
-            <p><strong>Stock:</strong> {book.StockQuantity}</p>
+            <p><strong>In Stock:</strong> {book.StockQuantity}</p>
 
             <div className="actions">
                 <input

@@ -1,0 +1,26 @@
+/* Book Details Page */
+.book-details {
+    max-width: 800px;
+    margin: 2rem auto;
+}
+
+.book-details-title {
+    font-size: 2.5rem;
+    /* Much bigger title */
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.book-details p {
+    font-size: 1.125rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.book-details strong {
+    color: var(--text-primary);
+    font-weight: 600;
+    min-width: 100px;
+    display: inline-block;
+}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { useToast } from '../context/ToastContext';
 
 const EditBook = () => {
   const { isbn } = useParams();
@@ -19,9 +20,9 @@ const EditBook = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { addToast } = useToast();
 
   // Fetch book data and publishers
   useEffect(() => {
@@ -52,13 +53,13 @@ const EditBook = () => {
 
       } catch (error) {
         console.error('Error fetching data:', error);
-        setMessage({ type: 'error', text: 'Failed to load book data' });
+        addToast('Failed to load book data', 'error');
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [isbn]);
+  }, [isbn, addToast]);
 
   // Filter publishers
   useEffect(() => {
@@ -114,11 +115,11 @@ const EditBook = () => {
     setSaving(true);
     try {
       await api.put(`/books/${isbn}`, { ...formData, username: user.Username });
-      setMessage({ type: 'success', text: 'Book updated successfully!' });
+      addToast('Book updated successfully!', 'success');
       setTimeout(() => navigate('/admin'), 1500);
     } catch (error) {
       console.error('Error updating book:', error);
-      setMessage({ type: 'error', text: error.response?.data?.error || 'Failed to update book' });
+      addToast(error.response?.data?.error || 'Failed to update book', 'error');
     } finally {
       setSaving(false);
     }
@@ -131,13 +132,9 @@ const EditBook = () => {
       <div className="form-container">
         <Link to="/admin" className="back-link">← Back to Dashboard</Link>
 
-        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+        <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border)' }}>
           <strong>ISBN:</strong> {isbn}
         </div>
-
-        {message.text && (
-          <div className={`message ${message.type}`}>{message.text}</div>
-        )}
 
         <form onSubmit={handleSubmit} className="modern-form">
           <div className="form-row">
@@ -255,10 +252,10 @@ const EditBook = () => {
                 if (!window.confirm('Are you sure you want to delete this book? This action cannot be undone.')) return;
                 try {
                   await api.delete(`/books/${isbn}`, { data: { username: user.Username } });
-                  alert('Book deleted successfully!');
+                  addToast('Book deleted successfully!', 'success');
                   navigate('/admin');
                 } catch (error) {
-                  alert('Failed to delete book: ' + (error.response?.data?.error || error.message));
+                  addToast('Failed to delete book: ' + (error.response?.data?.error || error.message), 'error');
                 }
               }}
             >

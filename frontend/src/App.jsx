@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import BookList from './pages/BookList';
@@ -17,6 +18,7 @@ import AddAdmin from './pages/AddAdmin';
 import OrderHistory from './pages/OrderHistory';
 import Profile from './pages/Profile';
 import AdminLogs from './pages/AdminLogs';
+import Home from './pages/Home';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -29,44 +31,45 @@ const ProtectedRoute = ({ children, role }) => {
 };
 
 // Home page with book list
-const Home = () => (
-    <Layout>
-        <BookList />
-    </Layout>
-);
+// Removed inline Home component to use the page component
+
+
 
 function App() {
     return (
         <AuthProvider>
-            <div className="App">
-                <Routes>
-                    {/* Public Routes */}
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/" element={<Home />} />
-                    <Route path="/books/:isbn" element={<Layout><BookDetails /></Layout>} />
+            <ToastProvider>
+                <div className="App">
+                    <Routes>
+                        {/* Public Routes */}
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/" element={<Layout><Home /></Layout>} />
+                        <Route path="/browse" element={<Layout><BookList /></Layout>} />
+                        <Route path="/books/:isbn" element={<Layout><BookDetails /></Layout>} />
 
-                    {/* Customer Routes */}
-                    <Route path="/cart" element={<ProtectedRoute><Layout title="Shopping Cart"><Cart /></Layout></ProtectedRoute>} />
-                    <Route path="/checkout" element={<ProtectedRoute><Layout title="Checkout"><Checkout /></Layout></ProtectedRoute>} />
-                    <Route path="/orders" element={<ProtectedRoute><Layout title="Order History"><OrderHistory /></Layout></ProtectedRoute>} />
-                    <Route path="/profile" element={<ProtectedRoute><Layout title="My Profile"><Profile /></Layout></ProtectedRoute>} />
+                        {/* Customer Routes */}
+                        <Route path="/cart" element={<ProtectedRoute><Layout title="Shopping Cart"><Cart /></Layout></ProtectedRoute>} />
+                        <Route path="/checkout" element={<ProtectedRoute><Layout title="Checkout"><Checkout /></Layout></ProtectedRoute>} />
+                        <Route path="/orders" element={<ProtectedRoute><Layout><OrderHistory /></Layout></ProtectedRoute>} />
+                        <Route path="/profile" element={<ProtectedRoute><Layout title="My Profile"><Profile /></Layout></ProtectedRoute>} />
 
-                    {/* Admin Routes */}
-                    <Route path="/admin" element={<ProtectedRoute role="admin"><Layout title="Admin Dashboard"><AdminDashboard /></Layout></ProtectedRoute>} />
-                    <Route path="/admin/add-book" element={<ProtectedRoute role="admin"><AddBook /></ProtectedRoute>} />
-                    <Route path="/admin/add-author" element={<ProtectedRoute role="admin"><AddAuthor /></ProtectedRoute>} />
-                    <Route path="/admin/add-publisher" element={<ProtectedRoute role="admin"><AddPublisher /></ProtectedRoute>} />
-                    <Route path="/admin/edit-book/:isbn" element={<ProtectedRoute role="admin"><EditBook /></ProtectedRoute>} />
-                    <Route path="/admin/add-admin" element={<ProtectedRoute role="admin"><AddAdmin /></ProtectedRoute>} />
-                    <Route path="/admin/reports" element={<ProtectedRoute role="admin"><Layout title="Reports"><AdminReports /></Layout></ProtectedRoute>} />
-                    <Route path="/admin/logs" element={<ProtectedRoute role="admin"><Layout title="Admin Logs"><AdminLogs /></Layout></ProtectedRoute>} />
-                    <Route path="/admin/database" element={<ProtectedRoute role="admin"><Layout title="Database Viewer"><AdminDatabaseView /></Layout></ProtectedRoute>} />
+                        {/* Admin Routes */}
+                        <Route path="/admin" element={<ProtectedRoute role="admin"><Layout title="Admin Dashboard"><AdminDashboard /></Layout></ProtectedRoute>} />
+                        <Route path="/admin/add-book" element={<ProtectedRoute role="admin"><AddBook /></ProtectedRoute>} />
+                        <Route path="/admin/add-author" element={<ProtectedRoute role="admin"><AddAuthor /></ProtectedRoute>} />
+                        <Route path="/admin/add-publisher" element={<ProtectedRoute role="admin"><AddPublisher /></ProtectedRoute>} />
+                        <Route path="/admin/edit-book/:isbn" element={<ProtectedRoute role="admin"><EditBook /></ProtectedRoute>} />
+                        <Route path="/admin/add-admin" element={<ProtectedRoute role="admin"><AddAdmin /></ProtectedRoute>} />
+                        <Route path="/admin/reports" element={<ProtectedRoute role="admin"><Layout title="Reports"><AdminReports /></Layout></ProtectedRoute>} />
+                        <Route path="/admin/logs" element={<ProtectedRoute role="admin"><Layout title="Admin Logs"><AdminLogs /></Layout></ProtectedRoute>} />
+                        <Route path="/admin/database" element={<ProtectedRoute role="admin"><Layout title="Database Viewer"><AdminDatabaseView /></Layout></ProtectedRoute>} />
 
-                    {/* Catch all - redirect to home */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-            </div>
+                        {/* Catch all - redirect to home */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                </div>
+            </ToastProvider>
         </AuthProvider>
     );
 }

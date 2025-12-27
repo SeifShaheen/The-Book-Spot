@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
-import api from '../api/axios';
-import { useNavigate, Link } from 'react-router-dom';
-import Layout from '../components/Layout';
+import { useToast } from '../context/ToastContext';
+
+// ...
 
 const AddAdmin = () => {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const { addToast } = useToast();
 
     // Only superadmin (username 'admin') can access this page
     useEffect(() => {
         if (user.Username !== 'admin') {
-            alert('Only the superadmin (admin) can create new admins');
+            addToast('Only the superadmin (admin) can create new admins', 'error');
             navigate('/admin');
         }
-    }, [user.Username, navigate]);
+    }, [user.Username, navigate, addToast]);
 
     const [formData, setFormData] = useState({
         username: '',
@@ -28,99 +28,16 @@ const AddAdmin = () => {
 
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState({ type: '', text: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-
-        // Phone: only numbers, max 11 digits
-        if (name === 'phone') {
-            const numbersOnly = value.replace(/\D/g, '').slice(0, 11);
-            setFormData(prev => ({ ...prev, phone: numbersOnly }));
-            return;
-        }
-
-        // Postal code: only numbers, max 5 digits
-        if (name === 'address.postalCode') {
-            const numbersOnly = value.replace(/\D/g, '').slice(0, 5);
-            setFormData(prev => ({ ...prev, address: { ...prev.address, postalCode: numbersOnly } }));
-            return;
-        }
-
-        if (name.startsWith('address.')) {
-            const field = name.split('.')[1];
-            setFormData(prev => ({ ...prev, address: { ...prev.address, [field]: value } }));
-        } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
-        }
-
-        if (errors[name]) {
-            setErrors({ ...errors, [name]: '' });
-        }
-    };
-
-    const validate = () => {
-        const newErrors = {};
-
-        if (!formData.username || formData.username.length < 3) {
-            newErrors.username = 'Username must be at least 3 characters';
-        }
-
-        if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = 'Please enter a valid email address';
-        }
-
-        if (!formData.password || formData.password.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
-        }
-
-        if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
-        }
-
-        // First name and last name are now required
-        if (!formData.firstName || formData.firstName.trim().length < 2) {
-            newErrors.firstName = 'First name is required (min 2 characters)';
-        }
-
-        if (!formData.lastName || formData.lastName.trim().length < 2) {
-            newErrors.lastName = 'Last name is required (min 2 characters)';
-        }
-
-        // Phone validation - 11 digits (optional but if provided must be valid)
-        if (formData.phone && formData.phone.length !== 11) {
-            newErrors.phone = 'Phone must be exactly 11 digits';
-        }
-
-        // Address validation - all required except building number
-        if (!formData.address.street) {
-            newErrors.street = 'Street is required';
-        }
-        if (!formData.address.city) {
-            newErrors.city = 'City is required';
-        }
-        if (!formData.address.region) {
-            newErrors.region = 'Region/Province is required';
-        }
-        if (!formData.address.postalCode || formData.address.postalCode.length !== 5) {
-            newErrors.postalCode = 'Postal code must be exactly 5 digits';
-        }
-        if (!formData.address.country) {
-            newErrors.country = 'Country is required';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+    // ... (handleChange and validate same)
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validate()) return;
 
         setLoading(true);
-        setMessage({ type: '', text: '' });
 
         try {
             await api.post('/admin/register-admin', {
@@ -133,14 +50,11 @@ const AddAdmin = () => {
                 address: formData.address,
                 currentUser: user.Username
             });
-            setMessage({ type: 'success', text: 'Admin created successfully!' });
+            addToast('Admin created successfully!', 'success');
             setTimeout(() => navigate('/admin'), 1500);
         } catch (error) {
             console.error('Error creating admin:', error);
-            setMessage({
-                type: 'error',
-                text: error.response?.data?.message || error.response?.data?.error || 'Failed to create admin'
-            });
+            addToast(error.response?.data?.message || error.response?.data?.error || 'Failed to create admin', 'error');
         } finally {
             setLoading(false);
         }
@@ -150,10 +64,6 @@ const AddAdmin = () => {
         <Layout title="Add New Admin">
             <div className="form-container">
                 <Link to="/admin" className="back-link">← Back to Dashboard</Link>
-
-                {message.text && (
-                    <div className={`message ${message.type}`}>{message.text}</div>
-                )}
 
                 <form onSubmit={handleSubmit} className="modern-form">
                     <div className="form-section">

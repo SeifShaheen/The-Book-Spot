@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { Link, useNavigate } from 'react-router-dom';
+import '../cart.css';
 
 const Cart = () => {
     const [items, setItems] = useState([]);
     const [total, setTotal] = useState(0);
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     const fetchCart = async () => {
         if (!user) return;
@@ -17,6 +20,7 @@ const Cart = () => {
             setTotal(response.data.grandTotal);
         } catch (error) {
             console.error('Error fetching cart:', error);
+            addToast('Failed to load cart', 'error');
         }
     };
 
@@ -28,8 +32,10 @@ const Cart = () => {
         try {
             await api.post('/cart/remove', { username: user.Username, isbn, role: user.role });
             fetchCart();
+            addToast('Item removed from cart', 'success');
         } catch (error) {
             console.error('Error removing item:', error);
+            addToast('Failed to remove item', 'error');
         }
     };
 
@@ -40,7 +46,7 @@ const Cart = () => {
         } catch (error) {
             console.error('Error updating quantity:', error);
             const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to update quantity';
-            alert(errorMessage);
+            addToast(errorMessage, 'error');
         }
     };
 
@@ -48,7 +54,6 @@ const Cart = () => {
 
     return (
         <div className="cart-container">
-            <h2>Shopping Cart</h2>
             {items.length === 0 ? (
                 <p>Your cart is empty</p>
             ) : (

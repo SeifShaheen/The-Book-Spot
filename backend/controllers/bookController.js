@@ -268,3 +268,44 @@ exports.deleteBook = (req, res) => {
         });
     });
 };
+
+// Get top 5 best selling books
+exports.getBestSellers = (req, res) => {
+    const sql = `
+    SELECT b.*, p.Name as PublisherName, GROUP_CONCAT(a.Name SEPARATOR ', ') as Authors, 
+           COALESCE(SUM(oi.Quantity), 0) as TotalSold
+    FROM Book b
+    LEFT JOIN Publisher p ON b.PublisherID = p.PublisherID
+    LEFT JOIN BookAuthor ba ON b.ISBN = ba.ISBN
+    LEFT JOIN Author a ON ba.AuthorID = a.AuthorID
+    LEFT JOIN OrderItem oi ON b.ISBN = oi.ISBN
+    GROUP BY b.ISBN
+    HAVING TotalSold > 0
+    ORDER BY TotalSold DESC
+    LIMIT 5
+  `;
+
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+};
+
+// Get 5 random books for recommendation
+exports.getRandomBooks = (req, res) => {
+    const sql = `
+    SELECT b.*, p.Name as PublisherName, GROUP_CONCAT(a.Name SEPARATOR ', ') as Authors
+    FROM Book b
+    LEFT JOIN Publisher p ON b.PublisherID = p.PublisherID
+    LEFT JOIN BookAuthor ba ON b.ISBN = ba.ISBN
+    LEFT JOIN Author a ON ba.AuthorID = a.AuthorID
+    GROUP BY b.ISBN
+    ORDER BY RAND()
+    LIMIT 5
+  `;
+
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+};

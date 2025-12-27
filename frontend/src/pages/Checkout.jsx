@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 // Luhn Algorithm for Credit Card Validation
 const validateCreditCard = (cardNumber) => {
@@ -62,6 +63,7 @@ const Checkout = () => {
     const [addressErrors, setAddressErrors] = useState({});
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     // Address selection
     const [addressChoice, setAddressChoice] = useState('current'); // 'current' or 'new'
@@ -208,11 +210,13 @@ const Checkout = () => {
                 expiryDate,
                 role: user.role
             });
-            alert('Checkout successful!');
+            addToast('Checkout successful!', 'success');
             navigate('/');
         } catch (error) {
             console.error('Checkout error:', error);
-            setError(error.response?.data?.message || error.response?.data?.error || 'Checkout failed');
+            const msg = error.response?.data?.message || error.response?.data?.error || 'Checkout failed';
+            setError(msg);
+            addToast(msg, 'error');
         }
     };
 

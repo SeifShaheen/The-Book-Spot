@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Link } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 const AdminDashboard = () => {
     const [supplyOrders, setSupplyOrders] = useState([]);
     const [lowStock, setLowStock] = useState([]);
     const [loading, setLoading] = useState(true);
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const { addToast } = useToast();
 
     const fetchData = async () => {
         try {
@@ -37,8 +39,9 @@ const AdminDashboard = () => {
                 decisionBy: user.Username
             });
             fetchData();
+            addToast('Supply order confirmed', 'success');
         } catch (error) {
-            alert('Failed to confirm order: ' + (error.response?.data?.error || error.message));
+            addToast('Failed to confirm order: ' + (error.response?.data?.error || error.message), 'error');
         }
     };
 
@@ -52,8 +55,9 @@ const AdminDashboard = () => {
                 decisionBy: user.Username
             });
             fetchData();
+            addToast('Supply order cancelled', 'success');
         } catch (error) {
-            alert('Failed to cancel order: ' + (error.response?.data?.error || error.message));
+            addToast('Failed to cancel order: ' + (error.response?.data?.error || error.message), 'error');
         }
     };
 

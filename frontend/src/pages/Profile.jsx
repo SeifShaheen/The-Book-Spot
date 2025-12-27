@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import '../profile.css';
+import '../profile-form.css';
 
 const Profile = () => {
     const { user } = useAuth();
@@ -9,7 +12,7 @@ const Profile = () => {
     const [editing, setEditing] = useState(false);
     const [formData, setFormData] = useState({});
     const [errors, setErrors] = useState({});
-    const [message, setMessage] = useState({ type: '', text: '' });
+    const { addToast } = useToast();
 
     useEffect(() => {
         if (!user) return;
@@ -24,11 +27,12 @@ const Profile = () => {
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching profile:', error);
+                addToast('Failed to load profile', 'error');
                 setLoading(false);
             }
         };
         fetchProfile();
-    }, [user]);
+    }, [user, addToast]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -36,7 +40,7 @@ const Profile = () => {
         // Phone: only numbers, max 11 digits
         if (name === 'Phone') {
             const numbersOnly = value.replace(/\D/g, '').slice(0, 11);
-            setFormData({ ...formData, Phone: numbersOnly });
+            setFormData(prev => ({ ...prev, [name]: numbersOnly }));
             if (errors.phone) setErrors({ ...errors, phone: '' });
             return;
         }
@@ -44,19 +48,25 @@ const Profile = () => {
         // Postal code: only numbers, max 5 digits
         if (name === 'ShippingPostalCode') {
             const numbersOnly = value.replace(/\D/g, '').slice(0, 5);
-            setFormData({ ...formData, ShippingPostalCode: numbersOnly });
+            setFormData(prev => ({ ...prev, [name]: numbersOnly }));
             if (errors.postalCode) setErrors({ ...errors, postalCode: '' });
             return;
         }
 
-        setFormData({ ...formData, [name]: value });
-        if (errors[name]) setErrors({ ...errors, [name]: '' });
+        setFormData(prev => ({ ...prev, [name]: value }));
+
+        // Clear specific errors
+        if (name === 'FirstName' && errors.firstName) setErrors({ ...errors, firstName: '' });
+        if (name === 'LastName' && errors.lastName) setErrors({ ...errors, lastName: '' });
+        if (name === 'ShippingStreet' && errors.street) setErrors({ ...errors, street: '' });
+        if (name === 'ShippingCity' && errors.city) setErrors({ ...errors, city: '' });
+        if (name === 'ShippingRegion' && errors.region) setErrors({ ...errors, region: '' });
+        if (name === 'ShippingCountry' && errors.country) setErrors({ ...errors, country: '' });
     };
 
     const validate = () => {
         const newErrors = {};
 
-        // First name and last name are required (min 2 chars)
         if (!formData.FirstName || formData.FirstName.trim().length < 2) {
             newErrors.firstName = 'First name is required (min 2 characters)';
         }
@@ -64,27 +74,19 @@ const Profile = () => {
             newErrors.lastName = 'Last name is required (min 2 characters)';
         }
 
-        // Phone validation - 11 digits (for customers only)
-        if (user.role !== 'admin' && formData.Phone && formData.Phone.length !== 11) {
-            newErrors.phone = 'Phone must be exactly 11 digits';
+        if (user.role !== 'admin') {
+            if (formData.Phone && formData.Phone.length !== 11) {
+                newErrors.phone = 'Phone must be exactly 11 digits';
+            }
         }
 
-        // Address validation - required fields
-        if (!formData.ShippingStreet) {
-            newErrors.street = 'Street is required';
-        }
-        if (!formData.ShippingCity) {
-            newErrors.city = 'City is required';
-        }
-        if (!formData.ShippingRegion) {
-            newErrors.region = 'Region/Province is required';
-        }
+        if (!formData.ShippingStreet) newErrors.street = 'Street is required';
+        if (!formData.ShippingCity) newErrors.city = 'City is required';
+        if (!formData.ShippingRegion) newErrors.region = 'Region is required';
         if (!formData.ShippingPostalCode || formData.ShippingPostalCode.length !== 5) {
-            newErrors.postalCode = 'Postal code must be exactly 5 digits';
+            newErrors.postalCode = 'Postal code must be 5 digits';
         }
-        if (!formData.ShippingCountry) {
-            newErrors.country = 'Country is required';
-        }
+        if (!formData.ShippingCountry) newErrors.country = 'Country is required';
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -92,12 +94,16 @@ const Profile = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!validate()) return;
+        if (!validate()) {
+            addToast('Please correct the validation errors', 'error');
+            return;
+        }
 
         try {
             const endpoint = user.role === 'admin'
                 ? `/auth/profile/admin/${user.Username}`
                 : `/auth/profile/${user.Username}`;
+
             const updateData = {
                 firstName: formData.FirstName,
                 lastName: formData.LastName,
@@ -117,11 +123,11 @@ const Profile = () => {
 
             await api.put(endpoint, updateData);
             setProfile(formData);
-            setMessage({ type: 'success', text: 'Profile updated successfully!' });
+            addToast('Profile updated successfully!', 'success');
             setEditing(false);
-            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         } catch (error) {
-            setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to update profile' });
+            console.error('Update error:', error);
+            addToast(error.response?.data?.message || 'Failed to update profile', 'error');
         }
     };
 
@@ -130,7 +136,6 @@ const Profile = () => {
 
     return (
         <div className="profile-container">
-            {message.text && <div className={`message ${message.type}`}>{message.text}</div>}
 
             {!editing ? (
                 <div className="profile-info card">
@@ -139,7 +144,7 @@ const Profile = () => {
                     <p><strong>Email:</strong> {profile.Email}</p>
                     {user.role !== 'admin' && <p><strong>Phone:</strong> {profile.Phone || 'Not set'}</p>}
                     <p><strong>Address:</strong> {profile.ShippingStreet || 'Not set'}, {profile.ShippingCity}, {profile.ShippingCountry}</p>
-                    <button onClick={() => setEditing(true)} className="btn btn-primary">Edit Profile</button>
+                    <button onClick={() => setEditing(true)} className="btn btn-primary edit-profile-btn">Edit Profile</button>
                 </div>
             ) : (
                 <form onSubmit={handleSubmit} className="modern-form">

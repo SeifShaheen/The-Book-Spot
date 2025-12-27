@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { useToast } from '../context/ToastContext';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -20,6 +21,7 @@ const Register = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -97,14 +99,18 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!validate()) return;
+        if (!validate()) {
+            addToast('Please correct validation errors', 'error');
+            return;
+        }
 
         setLoading(true);
         const result = await register(formData);
         if (result.success) {
+            addToast('Account created successfully! Please login.', 'success');
             navigate('/login');
         } else {
-            setErrors({ submit: result.message });
+            addToast(result.message || 'Registration failed', 'error');
         }
         setLoading(false);
     };
@@ -113,8 +119,6 @@ const Register = () => {
         <Layout title="Create Account">
             <div className="form-container">
                 <Link to="/login" className="back-link">← Back to Login</Link>
-
-                {errors.submit && <div className="message error">{errors.submit}</div>}
 
                 <form onSubmit={handleSubmit} className="modern-form">
                     <div className="form-section">

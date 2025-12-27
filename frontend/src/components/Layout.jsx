@@ -15,11 +15,12 @@ const Layout = ({ children, title }) => {
             <header className="main-header">
                 <div className="header-content">
                     <Link to="/" className="logo">
-                        <span className="logo-icon">📚</span>
-                        <span className="logo-text">Bookstore</span>
+
+                        <span className="logo-text">The Book Spot</span>
                     </Link>
                     <nav className="main-nav">
-                        <Link to="/" className="nav-link">Browse</Link>
+                        <Link to="/" className="nav-link">Home</Link>
+                        <Link to="/browse" className="nav-link">Browse Books</Link>
                         {user ? (
                             <>
                                 <Link to="/cart" className="nav-link">Cart</Link>
@@ -49,7 +50,7 @@ const Layout = ({ children, title }) => {
             </main>
 
             <footer className="main-footer">
-                <p>&copy; {new Date().getFullYear()} Bookstore System. All rights reserved.</p>
+                <p>&copy; {new Date().getFullYear()} The Book Spot. All rights reserved.</p>
             </footer>
         </div>
     );

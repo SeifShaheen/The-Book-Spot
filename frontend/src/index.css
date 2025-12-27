@@ -20,7 +20,7 @@
   --warning-color: #f59e0b;
 
   /* Typography */
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family: 'Poppins', system-ui, -apple-system, sans-serif;
   --font-size-base: 16px;
   --font-size-sm: 0.875rem;
   --font-size-lg: 1.125rem;
@@ -79,7 +79,7 @@ button,
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.1s;
-  font-size: var(--font-size-sm);
+  font-size: 0.9rem;
   text-decoration: none;
 }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -10,11 +11,12 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!username || !password) {
-            setError('Please fill in all fields');
+            addToast('Please fill in all fields', 'error');
             return;
         }
 
@@ -24,10 +26,11 @@ const Login = () => {
         const result = await login(username, password, role);
 
         if (result.success) {
+            addToast('Login successful!', 'success');
             if (role === 'admin') navigate('/admin', { replace: true });
             else navigate('/', { replace: true });
         } else {
-            setError(result.message);
+            addToast(result.message, 'error');
         }
         setLoading(false);
     };
@@ -36,8 +39,6 @@ const Login = () => {
         <div className="auth-page">
             <div className="auth-container">
                 <h2>Welcome Back</h2>
-
-                {error && <div className="message error">{error}</div>}
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
