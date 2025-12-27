@@ -6,6 +6,7 @@ const AdminDashboard = () => {
     const [supplyOrders, setSupplyOrders] = useState([]);
     const [lowStock, setLowStock] = useState([]);
     const [loading, setLoading] = useState(true);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     const fetchData = async () => {
         try {
@@ -63,7 +64,9 @@ const AdminDashboard = () => {
                 <Link to="/admin/add-book" className="btn btn-primary">+ Add New Book</Link>
                 <Link to="/admin/add-author" className="btn btn-primary">+ Add Author</Link>
                 <Link to="/admin/add-publisher" className="btn btn-primary">+ Add Publisher</Link>
-                <Link to="/admin/add-admin" className="btn btn-primary">+ Add Admin</Link>
+                {user.Username === 'admin' && (
+                    <Link to="/admin/add-admin" className="btn btn-primary">+ Add Admin</Link>
+                )}
                 <Link to="/admin/reports" className="btn btn-secondary">📊 View Reports</Link>
                 <Link to="/admin/database" className="btn btn-secondary">🗄️ Database</Link>
             </div>

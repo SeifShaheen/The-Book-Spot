@@ -30,15 +30,17 @@ const BookDetails = () => {
         }
 
         try {
-            await api.post('/cart/add', {
+            const response = await api.post('/cart/add', {
                 username: user.Username,
                 isbn: book.ISBN,
-                quantity: parseInt(quantity)
+                quantity: parseInt(quantity),
+                role: user.role
             });
-            alert('Added to cart!');
+            alert(response.data.message || 'Added to cart!');
         } catch (error) {
             console.error('Error adding to cart:', error);
-            alert('Failed to add to cart');
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to add to cart';
+            alert(errorMessage);
         }
     };
 

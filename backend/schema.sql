@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS OrderItem;
 DROP TABLE IF EXISTS `Order`;
 DROP TABLE IF EXISTS CartItem;
 DROP TABLE IF EXISTS Customer;
+DROP TABLE IF EXISTS Admin;
 DROP TABLE IF EXISTS ShoppingCart;
 DROP TABLE IF EXISTS BookAuthor;
 DROP TABLE IF EXISTS Author;
@@ -16,24 +17,36 @@ DROP TABLE IF EXISTS Book;
 DROP TABLE IF EXISTS PublisherAddress;
 DROP TABLE IF EXISTS PublisherPhone;
 DROP TABLE IF EXISTS Publisher;
-DROP TABLE IF EXISTS Admin;
 
--- 1. Admin Table
+-- 1. ShoppingCart Table (must be created before Admin and Customer)
+CREATE TABLE ShoppingCart (
+    CartID INT AUTO_INCREMENT PRIMARY KEY
+);
+
+-- 2. Admin Table
 CREATE TABLE Admin (
     Username VARCHAR(50) PRIMARY KEY,
     Password VARCHAR(255) NOT NULL,
     FirstName VARCHAR(50),
     LastName VARCHAR(50),
-    Email VARCHAR(100) UNIQUE
+    Email VARCHAR(100) UNIQUE,
+    ShippingStreet VARCHAR(255),
+    ShippingBuildingNo VARCHAR(50),
+    ShippingCity VARCHAR(100),
+    ShippingRegion VARCHAR(100),
+    ShippingPostalCode VARCHAR(20),
+    ShippingCountry VARCHAR(100),
+    CartID INT,
+    FOREIGN KEY (CartID) REFERENCES ShoppingCart(CartID) ON DELETE SET NULL
 );
 
--- 2. Publisher Table
+-- 3. Publisher Table
 CREATE TABLE Publisher (
     PublisherID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(100) NOT NULL
 );
 
--- 3. PublisherPhone Table
+-- 4. PublisherPhone Table
 CREATE TABLE PublisherPhone (
     PublisherID INT,
     PhoneNumber VARCHAR(20),
@@ -41,7 +54,7 @@ CREATE TABLE PublisherPhone (
     FOREIGN KEY (PublisherID) REFERENCES Publisher(PublisherID) ON DELETE CASCADE
 );
 
--- 4. PublisherAddress Table
+-- 5. PublisherAddress Table
 CREATE TABLE PublisherAddress (
     AddressID INT AUTO_INCREMENT PRIMARY KEY,
     PublisherID INT NOT NULL,
@@ -54,7 +67,7 @@ CREATE TABLE PublisherAddress (
     FOREIGN KEY (PublisherID) REFERENCES Publisher(PublisherID) ON DELETE CASCADE
 );
 
--- 5. Book Table
+-- 6. Book Table
 CREATE TABLE Book (
     ISBN VARCHAR(20) PRIMARY KEY,
     Title VARCHAR(255) NOT NULL,
@@ -67,24 +80,19 @@ CREATE TABLE Book (
     FOREIGN KEY (PublisherID) REFERENCES Publisher(PublisherID) ON DELETE CASCADE
 );
 
--- 6. Author Table
+-- 7. Author Table
 CREATE TABLE Author (
     AuthorID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(100) NOT NULL
 );
 
--- 7. BookAuthor Table
+-- 8. BookAuthor Table
 CREATE TABLE BookAuthor (
     ISBN VARCHAR(20),
     AuthorID INT,
     PRIMARY KEY (ISBN, AuthorID),
     FOREIGN KEY (ISBN) REFERENCES Book(ISBN) ON DELETE CASCADE,
     FOREIGN KEY (AuthorID) REFERENCES Author(AuthorID) ON DELETE CASCADE
-);
-
--- 8. ShoppingCart Table
-CREATE TABLE ShoppingCart (
-    CartID INT AUTO_INCREMENT PRIMARY KEY
 );
 
 -- 9. Customer Table

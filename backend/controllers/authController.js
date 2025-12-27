@@ -126,9 +126,58 @@ exports.getProfile = (req, res) => {
     });
 };
 
-// Register Admin (Admin only)
+// Get Admin Profile
+exports.getAdminProfile = (req, res) => {
+    const { username } = req.params;
+    const sql = `SELECT Username, FirstName, LastName, Email, 
+                 ShippingStreet, ShippingBuildingNo, ShippingCity, ShippingRegion, 
+                 ShippingPostalCode, ShippingCountry 
+                 FROM Admin WHERE Username = ?`;
+
+    db.query(sql, [username], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length === 0) return res.status(404).json({ message: 'Admin not found' });
+        res.json(results[0]);
+    });
+};
+
+// Update Admin Profile
+exports.updateAdminProfile = (req, res) => {
+    const { username } = req.params;
+    const { firstName, lastName, address } = req.body;
+
+    const sql = `UPDATE Admin SET 
+        FirstName = COALESCE(?, FirstName),
+        LastName = COALESCE(?, LastName),
+        ShippingStreet = COALESCE(?, ShippingStreet),
+        ShippingBuildingNo = COALESCE(?, ShippingBuildingNo),
+        ShippingCity = COALESCE(?, ShippingCity),
+        ShippingRegion = COALESCE(?, ShippingRegion),
+        ShippingPostalCode = COALESCE(?, ShippingPostalCode),
+        ShippingCountry = COALESCE(?, ShippingCountry)
+        WHERE Username = ?`;
+
+    const values = [
+        firstName, lastName,
+        address?.street, address?.buildingNo, address?.city,
+        address?.region, address?.postalCode, address?.country,
+        username
+    ];
+
+    db.query(sql, values, (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'Admin not found' });
+        res.json({ message: 'Profile updated successfully' });
+    });
+};
+// Register Admin (Superadmin only - username 'Admin')
 exports.registerAdmin = (req, res) => {
-    const { username, password, firstName, lastName, email } = req.body;
+    const { username, password, firstName, lastName, email, currentUser } = req.body;
+
+    // Check if the requesting user is the superadmin
+    if (!currentUser || currentUser !== 'admin') {
+        return res.status(403).json({ message: 'Only the superadmin (admin) can create new admins' });
+    }
 
     // Basic validation
     if (!username || !password || !email) {
@@ -151,13 +200,27 @@ exports.registerAdmin = (req, res) => {
             return res.status(400).json({ message: 'Username or Email already exists' });
         }
 
-        // Insert Admin
-        const sql = 'INSERT INTO Admin (Username, Password, FirstName, LastName, Email) VALUES (?, ?, ?, ?, ?)';
-        const values = [username, password, firstName || null, lastName || null, email];
-
-        db.query(sql, values, (err, result) => {
+        // Create Shopping Cart first
+        const cartSql = 'INSERT INTO ShoppingCart () VALUES ()';
+        db.query(cartSql, (err, cartResult) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Admin registered successfully' });
+
+            const cartId = cartResult.insertId;
+
+            // Insert Admin with cart and default address
+            const sql = `INSERT INTO Admin 
+                (Username, Password, FirstName, LastName, Email, CartID, 
+                 ShippingStreet, ShippingBuildingNo, ShippingCity, ShippingRegion, ShippingPostalCode, ShippingCountry) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const values = [
+                username, password, firstName || null, lastName || null, email, cartId,
+                '123 Admin Street', '1', 'Cairo', 'Cairo', '12345', 'Egypt'
+            ];
+
+            db.query(sql, values, (err, result) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.status(201).json({ message: 'Admin registered successfully' });
+            });
         });
     });
 };

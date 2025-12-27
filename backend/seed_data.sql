@@ -53,16 +53,16 @@ INSERT INTO Book (ISBN, Title, Category, Price, PublicationYear, StockQuantity, 
 
 -- BookAuthor (Many-to-Many)
 INSERT INTO BookAuthor (ISBN, AuthorID) VALUES
-('978-1501142970', 1),
-('978-0439708180', 2),
-('978-0385504201', 3),
-('978-0316017930', 4),
-('978-0062316110', 5),
-('978-1524763138', 6),
-('978-0735211292', 7),
-('978-0345539434', 8),
-('978-0393355673', 9),
-('978-0767908184', 10);
+('978-1501142970', 1),  -- The Outsider by Stephen King
+('978-0439708180', 2),  -- Harry Potter by J.K. Rowling
+('978-0385504201', 3),  -- The Da Vinci Code by Dan Brown
+('978-0316017930', 4),  -- Outliers by Malcolm Gladwell
+('978-0062316110', 5),  -- Sapiens by Yuval Noah Harari
+('978-1524763138', 6),  -- Becoming by Michelle Obama
+('978-0735211292', 7),  -- Atomic Habits by James Clear
+('978-0345539434', 8),  -- Cosmos by Carl Sagan
+('978-0393355673', 9),  -- Astrophysics for People in a Hurry by Neil deGrasse Tyson
+('978-0767908184', 10); -- A Short History of Nearly Everything by Bill Bryson
 
 -- Sample Customer
 INSERT INTO ShoppingCart (CartID) VALUES (1);

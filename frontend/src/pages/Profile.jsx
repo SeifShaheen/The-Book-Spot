@@ -14,7 +14,11 @@ const Profile = () => {
         if (!user) return;
         const fetchProfile = async () => {
             try {
-                const response = await api.get(`/auth/profile/${user.Username}`);
+                // Use admin endpoint for admin users
+                const endpoint = user.role === 'admin'
+                    ? `/auth/profile/admin/${user.Username}`
+                    : `/auth/profile/${user.Username}`;
+                const response = await api.get(endpoint);
                 setProfile(response.data);
                 setFormData(response.data);
                 setLoading(false);
@@ -33,16 +37,29 @@ const Profile = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await api.put(`/auth/profile/${user.Username}`, {
+            // Use admin endpoint for admin users
+            const endpoint = user.role === 'admin'
+                ? `/auth/profile/admin/${user.Username}`
+                : `/auth/profile/${user.Username}`;
+            const updateData = {
                 firstName: formData.FirstName,
                 lastName: formData.LastName,
-                phone: formData.Phone,
                 address: {
                     street: formData.ShippingStreet,
+                    buildingNo: formData.ShippingBuildingNo,
                     city: formData.ShippingCity,
+                    region: formData.ShippingRegion,
+                    postalCode: formData.ShippingPostalCode,
                     country: formData.ShippingCountry
                 }
-            });
+            };
+
+            // Only include phone for non-admin users
+            if (user.role !== 'admin') {
+                updateData.phone = formData.Phone;
+            }
+
+            await api.put(endpoint, updateData);
             setMessage('Profile updated successfully!');
             setEditing(false);
             setTimeout(() => setMessage(''), 3000);
@@ -64,7 +81,7 @@ const Profile = () => {
                     <p><strong>Username:</strong> {profile.Username}</p>
                     <p><strong>Name:</strong> {profile.FirstName} {profile.LastName}</p>
                     <p><strong>Email:</strong> {profile.Email}</p>
-                    <p><strong>Phone:</strong> {profile.Phone || 'Not set'}</p>
+                    {user.role !== 'admin' && <p><strong>Phone:</strong> {profile.Phone || 'Not set'}</p>}
                     <p><strong>Address:</strong> {profile.ShippingStreet || 'Not set'}, {profile.ShippingCity}, {profile.ShippingCountry}</p>
                     <button onClick={() => setEditing(true)}>Edit Profile</button>
                 </div>
@@ -78,10 +95,12 @@ const Profile = () => {
                         <label>Last Name:</label>
                         <input name="LastName" value={formData.LastName || ''} onChange={handleChange} />
                     </div>
-                    <div className="form-group">
-                        <label>Phone:</label>
-                        <input name="Phone" value={formData.Phone || ''} onChange={handleChange} />
-                    </div>
+                    {user.role !== 'admin' && (
+                        <div className="form-group">
+                            <label>Phone:</label>
+                            <input name="Phone" value={formData.Phone || ''} onChange={handleChange} />
+                        </div>
+                    )}
                     <div className="form-group">
                         <label>Street:</label>
                         <input name="ShippingStreet" value={formData.ShippingStreet || ''} onChange={handleChange} />

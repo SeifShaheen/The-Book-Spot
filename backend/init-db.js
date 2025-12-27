@@ -76,12 +76,31 @@ function runSqlFile(fileIndex) {
 }
 
 function createAdmin() {
-    const adminSql = "INSERT IGNORE INTO Admin (Username, Password, FirstName, LastName, Email) VALUES ('admin', 'admin123', 'System', 'Admin', 'admin@bookstore.com')";
-    connection.query(adminSql, (err) => {
-        if (err) console.error("Error creating default admin:", err);
-        else console.log("👤 Default admin created (admin/admin123)");
-        connection.end();
-        process.exit(0);
+    // First create a shopping cart for the admin
+    const cartSql = "INSERT INTO ShoppingCart () VALUES ()";
+    connection.query(cartSql, (err, cartResult) => {
+        if (err) {
+            console.error("Error creating admin cart:", err);
+            connection.end();
+            process.exit(1);
+            return;
+        }
+
+        const cartId = cartResult.insertId;
+
+        // Create admin with cart and default address
+        const adminSql = `INSERT IGNORE INTO Admin 
+            (Username, Password, FirstName, LastName, Email, CartID, 
+             ShippingStreet, ShippingBuildingNo, ShippingCity, ShippingRegion, ShippingPostalCode, ShippingCountry) 
+            VALUES ('admin', 'admin123', 'System', 'Admin', 'admin@bookstore.com', ?, 
+                    '123 Admin Street', '1', 'Cairo', 'Cairo', '12345', 'Egypt')`;
+
+        connection.query(adminSql, [cartId], (err) => {
+            if (err) console.error("Error creating default admin:", err);
+            else console.log("👤 Default admin created (admin/admin123) with cart and address");
+            connection.end();
+            process.exit(0);
+        });
     });
 }
 

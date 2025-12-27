@@ -12,7 +12,7 @@ const Cart = () => {
     const fetchCart = async () => {
         if (!user) return;
         try {
-            const response = await api.get('/cart', { params: { username: user.Username } });
+            const response = await api.get('/cart', { params: { username: user.Username, role: user.role } });
             setItems(response.data.items);
             setTotal(response.data.grandTotal);
         } catch (error) {
@@ -26,7 +26,7 @@ const Cart = () => {
 
     const removeFromCart = async (isbn) => {
         try {
-            await api.post('/cart/remove', { username: user.Username, isbn });
+            await api.post('/cart/remove', { username: user.Username, isbn, role: user.role });
             fetchCart();
         } catch (error) {
             console.error('Error removing item:', error);
@@ -35,10 +35,12 @@ const Cart = () => {
 
     const updateQuantity = async (isbn, change) => {
         try {
-            await api.post('/cart/update-quantity', { username: user.Username, isbn, change });
+            await api.post('/cart/update-quantity', { username: user.Username, isbn, change, role: user.role });
             fetchCart();
         } catch (error) {
             console.error('Error updating quantity:', error);
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to update quantity';
+            alert(errorMessage);
         }
     };
 
@@ -55,6 +57,7 @@ const Cart = () => {
                         <thead>
                             <tr>
                                 <th>Title</th>
+                                <th>Author(s)</th>
                                 <th>Price</th>
                                 <th>Quantity</th>
                                 <th>Total</th>
@@ -65,6 +68,7 @@ const Cart = () => {
                             {items.map(item => (
                                 <tr key={item.ISBN}>
                                     <td>{item.Title}</td>
+                                    <td>{item.Authors || 'Unknown'}</td>
                                     <td>${item.Price}</td>
                                     <td>
                                         <div className="quantity-controls">

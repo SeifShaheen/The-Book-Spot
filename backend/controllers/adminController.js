@@ -165,60 +165,78 @@ exports.getSupplyOrders = (req, res) => {
 exports.confirmSupplyOrder = (req, res) => {
     const { username, publisherId, orderDate } = req.body;
 
+    console.log('=== Confirm Supply Order Debug ===');
+    console.log('Received username:', username);
+    console.log('Received publisherId:', publisherId);
+    console.log('Received orderDate:', orderDate);
+    console.log('orderDate type:', typeof orderDate);
+
     db.getConnection((err, connection) => {
         if (err) return res.status(500).json({ error: err.message });
 
-        connection.beginTransaction(err => {
-            if (err) { connection.release(); return res.status(500).json({ error: err.message }); }
-
-            // 1. Update Status
-            const updateSql = `
-        UPDATE SupplyOrder 
-        SET Status = 'Confirmed' 
-        WHERE Username = ? AND PublisherID = ? AND OrderDate = ? AND Status = 'Pending'
-      `;
-
-            connection.query(updateSql, [username, publisherId, orderDate], (err, result) => {
-                if (err) return rollback(err);
-                if (result.affectedRows === 0) return rollback(new Error('Order not found or already confirmed'));
-
-                // 2. Add to Stock
-                const getItemsSql = `
-          SELECT ISBN, Quantity FROM SupplyOrderItem 
-          WHERE Username = ? AND PublisherID = ? AND OrderDate = ?
-        `;
-
-                connection.query(getItemsSql, [username, publisherId, orderDate], (err, items) => {
-                    if (err) return rollback(err);
-
-                    const processItems = (index) => {
-                        if (index >= items.length) {
-                            connection.commit(err => {
-                                if (err) return rollback(err);
-                                connection.release();
-                                res.json({ message: 'Supply order confirmed and stock updated' });
-                            });
-                            return;
-                        }
-
-                        const item = items[index];
-                        const updateStockSql = 'UPDATE Book SET StockQuantity = StockQuantity + ? WHERE ISBN = ?';
-                        connection.query(updateStockSql, [item.Quantity, item.ISBN], (err) => {
-                            if (err) return rollback(err);
-                            processItems(index + 1);
-                        });
-                    };
-
-                    processItems(0);
-                });
-            });
-
-            function rollback(error) {
-                connection.rollback(() => {
-                    connection.release();
-                    res.status(500).json({ error: error.message });
-                });
+        // First, let's check what orders exist in the database
+        const checkSql = `SELECT * FROM SupplyOrder WHERE Status = 'Pending'`;
+        connection.query(checkSql, (err, existingOrders) => {
+            if (err) {
+                connection.release();
+                return res.status(500).json({ error: err.message });
             }
+            console.log('Existing pending orders:', existingOrders);
+
+            connection.beginTransaction(err => {
+                if (err) { connection.release(); return res.status(500).json({ error: err.message }); }
+
+                // 1. Update Status - pass the date directly, let MySQL driver handle it
+                const updateSql = `
+            UPDATE SupplyOrder 
+            SET Status = 'Confirmed' 
+            WHERE Username = ? AND PublisherID = ? AND OrderDate = ? AND Status = 'Pending'
+          `;
+
+                console.log('Executing update with:', [username, publisherId, orderDate]);
+                connection.query(updateSql, [username, publisherId, new Date(orderDate)], (err, result) => {
+                    console.log('Update result:', result);
+                    if (err) return rollback(err);
+                    if (result.affectedRows === 0) return rollback(new Error('Order not found or already confirmed'));
+
+                    // 2. Add to Stock
+                    const getItemsSql = `
+              SELECT ISBN, Quantity FROM SupplyOrderItem 
+              WHERE Username = ? AND PublisherID = ? AND OrderDate = ?
+            `;
+
+                    connection.query(getItemsSql, [username, publisherId, new Date(orderDate)], (err, items) => {
+                        if (err) return rollback(err);
+
+                        const processItems = (index) => {
+                            if (index >= items.length) {
+                                connection.commit(err => {
+                                    if (err) return rollback(err);
+                                    connection.release();
+                                    res.json({ message: 'Supply order confirmed and stock updated' });
+                                });
+                                return;
+                            }
+
+                            const item = items[index];
+                            const updateStockSql = 'UPDATE Book SET StockQuantity = StockQuantity + ? WHERE ISBN = ?';
+                            connection.query(updateStockSql, [item.Quantity, item.ISBN], (err) => {
+                                if (err) return rollback(err);
+                                processItems(index + 1);
+                            });
+                        };
+
+                        processItems(0);
+                    });
+                });
+
+                function rollback(error) {
+                    connection.rollback(() => {
+                        connection.release();
+                        res.status(500).json({ error: error.message });
+                    });
+                }
+            });
         });
     });
 };
@@ -227,13 +245,17 @@ exports.confirmSupplyOrder = (req, res) => {
 exports.cancelSupplyOrder = (req, res) => {
     const { username, publisherId, orderDate } = req.body;
 
+    console.log('=== Cancel Supply Order Debug ===');
+    console.log('Received:', { username, publisherId, orderDate });
+
     const sql = `
     UPDATE SupplyOrder 
     SET Status = 'Cancelled' 
     WHERE Username = ? AND PublisherID = ? AND OrderDate = ? AND Status = 'Pending'
   `;
 
-    db.query(sql, [username, publisherId, orderDate], (err, result) => {
+    db.query(sql, [username, publisherId, new Date(orderDate)], (err, result) => {
+        console.log('Cancel result:', result);
         if (err) return res.status(500).json({ error: err.message });
         if (result.affectedRows === 0) return res.status(400).json({ message: 'Order not found or cannot be cancelled' });
 
