@@ -224,13 +224,12 @@ exports.cancelSupplyOrder = (req, res) => {
 
 // --- Reports ---
 
-// 1. Total Sales Previous Month
+// 1. Total Sales Last 30 Days
 exports.getSalesLastMonth = (req, res) => {
     const sql = `
-    SELECT SUM(TotalPrice) as MonthlySales
+    SELECT COALESCE(SUM(TotalPrice), 0) as MonthlySales
     FROM \`Order\`
-    WHERE OrderDate >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL 1 MONTH)
-      AND OrderDate < DATE_FORMAT(NOW(), '%Y-%m-01')
+    WHERE OrderDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)
   `;
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });

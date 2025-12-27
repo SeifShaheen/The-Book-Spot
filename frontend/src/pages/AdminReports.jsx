@@ -61,8 +61,8 @@ const AdminReports = () => {
             <div className="reports-grid">
                 {/* Monthly Sales */}
                 <div className="report-card">
-                    <h3>Sales Last Month</h3>
-                    <p className="big-number">${(sales || 0).toFixed(2)}</p>
+                    <h3>Sales Last 30 Days</h3>
+                    <p className="big-number">${Number(sales || 0).toFixed(2)}</p>
                 </div>
 
                 {/* Sales by Date */}
