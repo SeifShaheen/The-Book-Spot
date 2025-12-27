@@ -18,9 +18,11 @@ exports.getCart = (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const sql = `
-      SELECT ci.ISBN, ci.Quantity, b.Title, b.Price, (ci.Quantity * b.Price) as Total
+      SELECT ci.ISBN, ci.Quantity, b.Title, b.Price, a.Name as Author, (ci.Quantity * b.Price) as Total
       FROM CartItem ci
       JOIN Book b ON ci.ISBN = b.ISBN
+      JOIN bookauthor ba ON b.isbn = ba.isbn
+      JOIN author a ON ba.authorid = a.authorid
       WHERE ci.CartID = ?
     `;
 

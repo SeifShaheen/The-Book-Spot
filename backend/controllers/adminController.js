@@ -59,6 +59,25 @@ exports.getAuthors = (req, res) => {
 exports.addPublisher = (req, res) => {
     const { name, phone, address } = req.body;
 
+    // Validation
+    if (!name || name.trim().length < 2) {
+        return res.status(400).json({ error: 'Publisher name is required (min 2 characters)' });
+    }
+
+    // Phone validation: must be exactly 11 digits (numbers only)
+    if (phone) {
+        if (!/^\d{11}$/.test(phone)) {
+            return res.status(400).json({ error: 'Phone number must be exactly 11 digits (numbers only)' });
+        }
+    }
+
+    // Postal code validation: must be exactly 5 digits (numbers only)
+    if (address && address.postalCode) {
+        if (!/^\d{5}$/.test(address.postalCode)) {
+            return res.status(400).json({ error: 'Postal code must be exactly 5 digits (numbers only)' });
+        }
+    }
+
     db.getConnection((err, connection) => {
         if (err) return res.status(500).json({ error: err.message });
 
