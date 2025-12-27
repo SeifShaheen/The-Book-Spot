@@ -16,8 +16,8 @@ exports.getAllBooks = (req, res) => {
     const values = [];
 
     if (q) {
-        conditions.push('(b.Title LIKE ? OR b.ISBN LIKE ?)');
-        values.push(`%${q}%`, `%${q}%`);
+        conditions.push('(b.Title LIKE ? OR b.ISBN LIKE ? OR a.Name LIKE ?)');
+        values.push(`%${q}%`, `%${q}%`, `%${q}%`);
     }
 
     if (category) {
@@ -67,9 +67,46 @@ exports.getBookByISBN = (req, res) => {
     });
 };
 
+// Validate ISBN-13 format and checksum
+function validateISBN13(isbn) {
+    if (!isbn) return { valid: false, error: 'ISBN is required' };
+
+    // Remove dashes and spaces
+    const cleanISBN = isbn.replace(/[-\s]/g, '');
+
+    // Must be exactly 13 digits
+    if (!/^\d{13}$/.test(cleanISBN)) {
+        return { valid: false, error: 'ISBN must be exactly 13 digits' };
+    }
+
+    // Must start with 978 or 979
+    if (!cleanISBN.startsWith('978') && !cleanISBN.startsWith('979')) {
+        return { valid: false, error: 'ISBN-13 must start with 978 or 979' };
+    }
+
+    // Validate checksum
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+        sum += parseInt(cleanISBN[i]) * (i % 2 === 0 ? 1 : 3);
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+
+    if (parseInt(cleanISBN[12]) !== checkDigit) {
+        return { valid: false, error: 'Invalid ISBN checksum' };
+    }
+
+    return { valid: true, cleanISBN };
+}
+
 // Add new book (Admin only)
 exports.addBook = (req, res) => {
-    const { isbn, title, category, price, publicationYear, stockQuantity, threshold, publisherId, authors } = req.body;
+    const { isbn, title, category, price, publicationYear, stockQuantity, threshold, publisherId, authors, username } = req.body;
+
+    // Validate ISBN
+    const isbnValidation = validateISBN13(isbn);
+    if (!isbnValidation.valid) {
+        return res.status(400).json({ error: isbnValidation.error });
+    }
 
     // Transaction to ensure Book and BookAuthor are added together
     db.getConnection((err, connection) => {
@@ -115,6 +152,15 @@ exports.addBook = (req, res) => {
                             res.status(500).json({ error: err.message });
                         });
                     }
+
+                    // Log the action
+                    if (username) {
+                        const actionSql = 'INSERT INTO action (Username, ISBN, Notes) VALUES (?, ?, ?)';
+                        connection.query(actionSql, [username, isbn, `Added book: ${title}`], (err) => {
+                            if (err) console.error('Failed to log action:', err);
+                        });
+                    }
+
                     connection.release();
                     res.status(201).json({ message: 'Book added successfully' });
                 });
@@ -126,12 +172,99 @@ exports.addBook = (req, res) => {
 // Update book (Admin only)
 exports.updateBook = (req, res) => {
     const { isbn } = req.params;
-    const { title, category, price, publicationYear, stockQuantity, threshold, publisherId } = req.body;
+    const { title, category, price, publicationYear, stockQuantity, threshold, publisherId, username } = req.body;
 
     const sql = `UPDATE Book SET Title=?, Category=?, Price=?, PublicationYear=?, StockQuantity=?, Threshold=?, PublisherID=? WHERE ISBN=?`;
 
     db.query(sql, [title, category, price, publicationYear, stockQuantity, threshold, publisherId, isbn], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
+
+        // Log the action
+        if (username) {
+            const actionSql = 'INSERT INTO action (Username, ISBN, Notes) VALUES (?, ?, ?)';
+            db.query(actionSql, [username, isbn, `Updated book: ${title}`], (err) => {
+                if (err) console.error('Failed to log action:', err);
+            });
+        }
+
         res.json({ message: 'Book updated successfully' });
+    });
+};
+
+// Delete book (Admin only)
+exports.deleteBook = (req, res) => {
+    const { isbn } = req.params;
+    const { username } = req.body;
+
+    db.getConnection((err, connection) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        connection.beginTransaction(err => {
+            if (err) { connection.release(); return res.status(500).json({ error: err.message }); }
+
+            // First get book title for logging
+            connection.query('SELECT Title FROM Book WHERE ISBN = ?', [isbn], (err, results) => {
+                if (err) return rollback(err);
+                if (results.length === 0) return rollback(new Error('Book not found'));
+
+                const bookTitle = results[0].Title;
+
+                // Delete from BookAuthor first (foreign key)
+                connection.query('DELETE FROM BookAuthor WHERE ISBN = ?', [isbn], (err) => {
+                    if (err) return rollback(err);
+
+                    // Delete from OrderItem (set to null or delete orphans)
+                    connection.query('DELETE FROM OrderItem WHERE ISBN = ?', [isbn], (err) => {
+                        if (err) return rollback(err);
+
+                        // Delete from CartItem
+                        connection.query('DELETE FROM CartItem WHERE ISBN = ?', [isbn], (err) => {
+                            if (err) return rollback(err);
+
+                            // Delete from SupplyOrderItem
+                            connection.query('DELETE FROM SupplyOrderItem WHERE ISBN = ?', [isbn], (err) => {
+                                if (err) return rollback(err);
+
+                                // Log the action BEFORE deleting the book (use NULL for ISBN since it will be deleted)
+                                const logAction = (callback) => {
+                                    if (username) {
+                                        connection.query(
+                                            'INSERT INTO action (Username, ISBN, Notes) VALUES (?, NULL, ?)',
+                                            [username, `Deleted book (ISBN: ${isbn}): ${bookTitle}`],
+                                            (err) => {
+                                                if (err) console.error('Failed to log action:', err);
+                                                callback();
+                                            }
+                                        );
+                                    } else {
+                                        callback();
+                                    }
+                                };
+
+                                logAction(() => {
+                                    // Finally delete the book
+                                    connection.query('DELETE FROM Book WHERE ISBN = ?', [isbn], (err) => {
+                                        if (err) return rollback(err);
+
+                                        connection.commit(err => {
+                                            if (err) return rollback(err);
+                                            connection.release();
+                                            res.json({ message: 'Book deleted successfully' });
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+
+            function rollback(error) {
+                connection.rollback(() => {
+                    connection.release();
+                    res.status(500).json({ error: error.message });
+                });
+            }
+        });
     });
 };

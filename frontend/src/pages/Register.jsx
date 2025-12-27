@@ -1,14 +1,23 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import Layout from '../components/Layout';
 
 const Register = () => {
     const [formData, setFormData] = useState({
-        username: '', password: '', firstName: '', lastName: '', email: '', phone: '',
+        username: '',
+        password: '',
+        confirmPassword: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
         address: { street: '', buildingNo: '', city: '', region: '', postalCode: '', country: '' }
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
 
@@ -35,6 +44,10 @@ const Register = () => {
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
+
+        if (errors[name]) {
+            setErrors({ ...errors, [name]: '' });
+        }
     };
 
     const validate = () => {
@@ -45,10 +58,20 @@ const Register = () => {
         if (!formData.password || formData.password.length < 6) {
             newErrors.password = 'Password must be at least 6 characters';
         }
+        if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
         if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
             newErrors.email = 'Valid email is required';
         }
-        // Phone validation - 11 digits
+        // First name and last name are required
+        if (!formData.firstName || formData.firstName.trim().length < 2) {
+            newErrors.firstName = 'First name is required (min 2 characters)';
+        }
+        if (!formData.lastName || formData.lastName.trim().length < 2) {
+            newErrors.lastName = 'Last name is required (min 2 characters)';
+        }
+        // Phone validation - 11 digits (optional)
         if (formData.phone && formData.phone.length !== 11) {
             newErrors.phone = 'Phone must be exactly 11 digits';
         }
@@ -87,159 +110,265 @@ const Register = () => {
     };
 
     return (
-        <div className="auth-page">
-            <div className="auth-container" style={{ maxWidth: '500px' }}>
-                <h2>Create Account</h2>
+        <Layout title="Create Account">
+            <div className="form-container">
+                <Link to="/login" className="back-link">← Back to Login</Link>
 
                 {errors.submit && <div className="message error">{errors.submit}</div>}
 
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label>Username <span className="required">*</span></label>
-                        <input
-                            name="username"
-                            value={formData.username}
-                            onChange={handleChange}
-                            placeholder="Choose a username"
-                            className={errors.username ? 'error' : ''}
-                        />
-                        {errors.username && <span className="error-text">{errors.username}</span>}
-                    </div>
-
-                    <div className="form-group">
-                        <label>Password <span className="required">*</span></label>
-                        <input
-                            name="password"
-                            type="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            placeholder="Min 6 characters"
-                            className={errors.password ? 'error' : ''}
-                        />
-                        {errors.password && <span className="error-text">{errors.password}</span>}
-                    </div>
-
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div className="form-group">
-                            <label>First Name</label>
-                            <input name="firstName" value={formData.firstName} onChange={handleChange} placeholder="First name" />
+                <form onSubmit={handleSubmit} className="modern-form">
+                    <div className="form-section">
+                        <h3>Account Information</h3>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Username <span className="required">*</span></label>
+                                <input
+                                    name="username"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                    placeholder="Choose a username"
+                                    className={errors.username ? 'error' : ''}
+                                />
+                                {errors.username && <span className="error-text">{errors.username}</span>}
+                            </div>
+                            <div className="form-group">
+                                <label>Email <span className="required">*</span></label>
+                                <input
+                                    name="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder="your@email.com"
+                                    className={errors.email ? 'error' : ''}
+                                />
+                                {errors.email && <span className="error-text">{errors.email}</span>}
+                            </div>
                         </div>
-                        <div className="form-group">
-                            <label>Last Name</label>
-                            <input name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Last name" />
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Password <span className="required">*</span></label>
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        placeholder="Min 6 characters"
+                                        className={errors.password ? 'error' : ''}
+                                        style={{ paddingRight: '2.5rem' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '0.75rem',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '1.1rem',
+                                            padding: '0',
+                                            color: 'var(--text-secondary)'
+                                        }}
+                                    >
+                                        {showPassword ? (
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                                <line x1="1" y1="1" x2="23" y2="23" />
+                                            </svg>
+                                        ) : (
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                                {errors.password && <span className="error-text">{errors.password}</span>}
+                            </div>
+                            <div className="form-group">
+                                <label>Confirm Password <span className="required">*</span></label>
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        name="confirmPassword"
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        placeholder="Confirm password"
+                                        className={errors.confirmPassword ? 'error' : ''}
+                                        style={{ paddingRight: '2.5rem' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '0.75rem',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            fontSize: '1.1rem',
+                                            padding: '0',
+                                            color: 'var(--text-secondary)'
+                                        }}
+                                    >
+                                        {showConfirmPassword ? (
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                                <line x1="1" y1="1" x2="23" y2="23" />
+                                            </svg>
+                                        ) : (
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                                {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="form-group">
-                        <label>Email <span className="required">*</span></label>
-                        <input
-                            name="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="your@email.com"
-                            className={errors.email ? 'error' : ''}
-                        />
-                        {errors.email && <span className="error-text">{errors.email}</span>}
-                    </div>
+                    <div className="form-section">
+                        <h3>Personal Information</h3>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>First Name <span className="required">*</span></label>
+                                <input
+                                    name="firstName"
+                                    value={formData.firstName}
+                                    onChange={handleChange}
+                                    placeholder="First name"
+                                    className={errors.firstName ? 'error' : ''}
+                                />
+                                {errors.firstName && <span className="error-text">{errors.firstName}</span>}
+                            </div>
+                            <div className="form-group">
+                                <label>Last Name <span className="required">*</span></label>
+                                <input
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleChange}
+                                    placeholder="Last name"
+                                    className={errors.lastName ? 'error' : ''}
+                                />
+                                {errors.lastName && <span className="error-text">{errors.lastName}</span>}
+                            </div>
+                        </div>
 
-                    <div className="form-group">
-                        <label>Phone (11 digits)</label>
-                        <input
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            placeholder="e.g., 01234567890"
-                            maxLength="11"
-                            className={errors.phone ? 'error' : ''}
-                        />
-                        {errors.phone && <span className="error-text">{errors.phone}</span>}
-                        {formData.phone && !errors.phone && <span className="hint">{formData.phone.length}/11 digits</span>}
-                    </div>
-
-                    <h3 style={{ marginTop: '1.5rem', marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', textTransform: 'uppercase' }}>
-                        Shipping Address
-                    </h3>
-
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
                         <div className="form-group">
-                            <label>Street <span className="required">*</span></label>
+                            <label>Phone (11 digits)</label>
                             <input
-                                name="address.street"
-                                value={formData.address.street}
+                                name="phone"
+                                value={formData.phone}
                                 onChange={handleChange}
-                                placeholder="Street address"
-                                className={errors.street ? 'error' : ''}
+                                placeholder="e.g., 01234567890"
+                                maxLength="11"
+                                className={errors.phone ? 'error' : ''}
                             />
-                            {errors.street && <span className="error-text">{errors.street}</span>}
-                        </div>
-                        <div className="form-group">
-                            <label>Building No.</label>
-                            <input name="address.buildingNo" value={formData.address.buildingNo} onChange={handleChange} placeholder="Building #" />
+                            {errors.phone && <span className="error-text">{errors.phone}</span>}
+                            {formData.phone && !errors.phone && <span className="hint">{formData.phone.length}/11 digits</span>}
                         </div>
                     </div>
 
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div className="form-group">
-                            <label>City <span className="required">*</span></label>
-                            <input
-                                name="address.city"
-                                value={formData.address.city}
-                                onChange={handleChange}
-                                placeholder="City"
-                                className={errors.city ? 'error' : ''}
-                            />
-                            {errors.city && <span className="error-text">{errors.city}</span>}
+                    <div className="form-section">
+                        <h3>Shipping Address</h3>
+                        <div className="form-row">
+                            <div className="form-group" style={{ flex: 2 }}>
+                                <label>Street <span className="required">*</span></label>
+                                <input
+                                    name="address.street"
+                                    value={formData.address.street}
+                                    onChange={handleChange}
+                                    placeholder="Street address"
+                                    className={errors.street ? 'error' : ''}
+                                />
+                                {errors.street && <span className="error-text">{errors.street}</span>}
+                            </div>
+                            <div className="form-group" style={{ flex: 1 }}>
+                                <label>Building No.</label>
+                                <input
+                                    name="address.buildingNo"
+                                    value={formData.address.buildingNo}
+                                    onChange={handleChange}
+                                    placeholder="Building #"
+                                />
+                            </div>
                         </div>
-                        <div className="form-group">
-                            <label>Region/Province <span className="required">*</span></label>
-                            <input
-                                name="address.region"
-                                value={formData.address.region}
-                                onChange={handleChange}
-                                placeholder="State/Province"
-                                className={errors.region ? 'error' : ''}
-                            />
-                            {errors.region && <span className="error-text">{errors.region}</span>}
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>City <span className="required">*</span></label>
+                                <input
+                                    name="address.city"
+                                    value={formData.address.city}
+                                    onChange={handleChange}
+                                    placeholder="City"
+                                    className={errors.city ? 'error' : ''}
+                                />
+                                {errors.city && <span className="error-text">{errors.city}</span>}
+                            </div>
+                            <div className="form-group">
+                                <label>Region/Province <span className="required">*</span></label>
+                                <input
+                                    name="address.region"
+                                    value={formData.address.region}
+                                    onChange={handleChange}
+                                    placeholder="State/Province"
+                                    className={errors.region ? 'error' : ''}
+                                />
+                                {errors.region && <span className="error-text">{errors.region}</span>}
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Postal Code <span className="required">*</span></label>
+                                <input
+                                    name="address.postalCode"
+                                    value={formData.address.postalCode}
+                                    onChange={handleChange}
+                                    placeholder="5 digits"
+                                    maxLength="5"
+                                    className={errors.postalCode ? 'error' : ''}
+                                />
+                                {errors.postalCode && <span className="error-text">{errors.postalCode}</span>}
+                            </div>
+                            <div className="form-group">
+                                <label>Country <span className="required">*</span></label>
+                                <input
+                                    name="address.country"
+                                    value={formData.address.country}
+                                    onChange={handleChange}
+                                    placeholder="Country"
+                                    className={errors.country ? 'error' : ''}
+                                />
+                                {errors.country && <span className="error-text">{errors.country}</span>}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div className="form-group">
-                            <label>Postal Code <span className="required">*</span></label>
-                            <input
-                                name="address.postalCode"
-                                value={formData.address.postalCode}
-                                onChange={handleChange}
-                                placeholder="5 digits"
-                                maxLength="5"
-                                className={errors.postalCode ? 'error' : ''}
-                            />
-                            {errors.postalCode && <span className="error-text">{errors.postalCode}</span>}
-                        </div>
-                        <div className="form-group">
-                            <label>Country <span className="required">*</span></label>
-                            <input
-                                name="address.country"
-                                value={formData.address.country}
-                                onChange={handleChange}
-                                placeholder="Country"
-                                className={errors.country ? 'error' : ''}
-                            />
-                            {errors.country && <span className="error-text">{errors.country}</span>}
-                        </div>
+                    <div className="form-actions">
+                        <button type="button" className="btn btn-secondary" onClick={() => navigate('/login')}>
+                            Cancel
+                        </button>
+                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                            {loading ? 'Creating Account...' : 'Create Account'}
+                        </button>
                     </div>
-
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
-                        {loading ? 'Creating Account...' : 'Create Account'}
-                    </button>
                 </form>
 
                 <p style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                     Already have an account? <Link to="/login">Login</Link>
                 </p>
             </div>
-        </div>
+        </Layout>
     );
 };
 

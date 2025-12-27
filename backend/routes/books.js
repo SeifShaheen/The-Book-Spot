@@ -6,5 +6,6 @@ router.get('/', bookController.getAllBooks);
 router.get('/:isbn', bookController.getBookByISBN);
 router.post('/', bookController.addBook);
 router.put('/:isbn', bookController.updateBook);
+router.delete('/:isbn', bookController.deleteBook);
 
 module.exports = router;

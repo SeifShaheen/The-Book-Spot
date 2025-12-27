@@ -33,7 +33,8 @@ const AdminDashboard = () => {
             await api.post('/admin/supply/confirm', {
                 username: order.Username,
                 publisherId: order.PublisherID,
-                orderDate: order.OrderDate
+                orderDate: order.OrderDate,
+                decisionBy: user.Username
             });
             fetchData();
         } catch (error) {
@@ -47,7 +48,8 @@ const AdminDashboard = () => {
             await api.post('/admin/supply/cancel', {
                 username: order.Username,
                 publisherId: order.PublisherID,
-                orderDate: order.OrderDate
+                orderDate: order.OrderDate,
+                decisionBy: user.Username
             });
             fetchData();
         } catch (error) {
@@ -67,8 +69,9 @@ const AdminDashboard = () => {
                 {user.Username === 'admin' && (
                     <Link to="/admin/add-admin" className="btn btn-primary">+ Add Admin</Link>
                 )}
-                <Link to="/admin/reports" className="btn btn-secondary">📊 View Reports</Link>
-                <Link to="/admin/database" className="btn btn-secondary">🗄️ Database</Link>
+                <Link to="/admin/reports" className="btn btn-secondary">View Reports</Link>
+                <Link to="/admin/logs" className="btn btn-secondary">View Logs</Link>
+                <Link to="/admin/database" className="btn btn-secondary">Database</Link>
             </div>
 
             {/* Low Stock Alert */}

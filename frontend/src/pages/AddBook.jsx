@@ -27,6 +27,7 @@ const AddBook = () => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const navigate = useNavigate();
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -78,6 +79,35 @@ const AddBook = () => {
         }
     };
 
+    // Validate ISBN-13 format and checksum
+    const validateISBN13 = (isbn) => {
+        // Remove dashes and spaces
+        const cleanISBN = isbn.replace(/[-\s]/g, '');
+
+        // Must be exactly 13 digits
+        if (!/^\d{13}$/.test(cleanISBN)) {
+            return { valid: false, error: 'ISBN must be exactly 13 digits' };
+        }
+
+        // Must start with 978 or 979
+        if (!cleanISBN.startsWith('978') && !cleanISBN.startsWith('979')) {
+            return { valid: false, error: 'ISBN-13 must start with 978 or 979' };
+        }
+
+        // Validate checksum
+        let sum = 0;
+        for (let i = 0; i < 12; i++) {
+            sum += parseInt(cleanISBN[i]) * (i % 2 === 0 ? 1 : 3);
+        }
+        const checkDigit = (10 - (sum % 10)) % 10;
+
+        if (parseInt(cleanISBN[12]) !== checkDigit) {
+            return { valid: false, error: 'Invalid ISBN checksum' };
+        }
+
+        return { valid: true };
+    };
+
     const selectPublisher = (pub) => {
         setFormData({ ...formData, publisherId: pub.PublisherID });
         setPublisherSearch(pub.Name);
@@ -101,8 +131,11 @@ const AddBook = () => {
 
     const validate = () => {
         const newErrors = {};
-        if (!formData.isbn || formData.isbn.length < 10) {
-            newErrors.isbn = 'ISBN must be at least 10 characters';
+        const isbnValidation = validateISBN13(formData.isbn);
+        if (!formData.isbn) {
+            newErrors.isbn = 'ISBN is required';
+        } else if (!isbnValidation.valid) {
+            newErrors.isbn = isbnValidation.error;
         }
         if (!formData.title || formData.title.length < 2) {
             newErrors.title = 'Title is required';
@@ -131,8 +164,27 @@ const AddBook = () => {
         if (!validate()) return;
 
         setLoading(true);
+        setMessage({ type: '', text: '' });
+
         try {
-            await api.post('/books', formData);
+            // Check if ISBN already exists
+            try {
+                const existingBook = await api.get(`/books/${formData.isbn}`);
+                if (existingBook.data) {
+                    setErrors({ ...errors, isbn: 'This ISBN already exists in the system' });
+                    setMessage({ type: 'error', text: `A book with ISBN "${formData.isbn}" already exists: "${existingBook.data.Title}"` });
+                    setLoading(false);
+                    return;
+                }
+            } catch (checkError) {
+                // 404 means book doesn't exist - that's what we want
+                if (checkError.response?.status !== 404) {
+                    throw checkError;
+                }
+            }
+
+            // Proceed to add the book
+            await api.post('/books', { ...formData, username: user.Username });
             setMessage({ type: 'success', text: 'Book added successfully!' });
             setTimeout(() => navigate('/admin'), 1500);
         } catch (error) {

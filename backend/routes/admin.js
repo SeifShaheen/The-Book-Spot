@@ -16,11 +16,13 @@ router.get('/supply', adminController.getSupplyOrders);
 router.post('/supply/confirm', adminController.confirmSupplyOrder);
 router.post('/supply/cancel', adminController.cancelSupplyOrder);
 router.get('/reports/sales', adminController.getSalesLastMonth);
-router.get('/reports/sales-by-date', adminController.getSalesByDate);
+router.get('/reports/sales-on-date', adminController.getSalesOnDate);
 router.get('/reports/customers', adminController.getTopCustomers);
 router.get('/reports/books', adminController.getTopBooks);
 router.get('/reports/reorders', adminController.getBookReorderCount);
 router.get('/reports/low-stock', adminController.getLowStockBooks);
+router.get('/logs/actions', adminController.getActionLog);
+router.get('/logs/reorders', adminController.getReorderDecisions);
 router.get('/database/:tableName', adminController.getDatabaseTable);
 
 module.exports = router;

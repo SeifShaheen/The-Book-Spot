@@ -123,14 +123,14 @@ CREATE TABLE CartItem (
     FOREIGN KEY (ISBN) REFERENCES Book(ISBN) ON DELETE CASCADE
 );
 
--- 11. Order Table
+-- 11. Order Table (Username can be either Customer or Admin)
 CREATE TABLE `Order` (
     OrderID INT AUTO_INCREMENT PRIMARY KEY,
     OrderDate DATETIME DEFAULT CURRENT_TIMESTAMP,
     Status ENUM('Pending', 'Confirmed', 'Cancelled') DEFAULT 'Pending',
     TotalPrice DECIMAL(10, 2),
-    Username VARCHAR(50),
-    FOREIGN KEY (Username) REFERENCES Customer(Username) ON DELETE SET NULL
+    Username VARCHAR(50)
+    -- Note: No FK on Username to allow orders from both Customer and Admin tables
 );
 
 -- 12. OrderItem Table
@@ -161,6 +161,7 @@ CREATE TABLE SupplyOrder (
     OrderDate DATETIME DEFAULT CURRENT_TIMESTAMP,
     Status ENUM('Pending', 'Confirmed', 'Cancelled') DEFAULT 'Pending',
     TotalPrice DECIMAL(10, 2),
+    DecisionBy VARCHAR(50),
     PRIMARY KEY (Username, PublisherID, OrderDate),
     FOREIGN KEY (Username) REFERENCES Admin(Username) ON DELETE CASCADE,
     FOREIGN KEY (PublisherID) REFERENCES Publisher(PublisherID) ON DELETE CASCADE

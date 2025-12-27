@@ -21,6 +21,7 @@ const EditBook = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   // Fetch book data and publishers
   useEffect(() => {
@@ -112,7 +113,7 @@ const EditBook = () => {
 
     setSaving(true);
     try {
-      await api.put(`/books/${isbn}`, formData);
+      await api.put(`/books/${isbn}`, { ...formData, username: user.Username });
       setMessage({ type: 'success', text: 'Book updated successfully!' });
       setTimeout(() => navigate('/admin'), 1500);
     } catch (error) {
@@ -246,13 +247,31 @@ const EditBook = () => {
             {errors.publisherId && <span className="error-text">{errors.publisherId}</span>}
           </div>
 
-          <div className="form-actions">
-            <button type="button" className="btn btn-secondary" onClick={() => navigate('/admin')}>
-              Cancel
+          <div className="form-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={async () => {
+                if (!window.confirm('Are you sure you want to delete this book? This action cannot be undone.')) return;
+                try {
+                  await api.delete(`/books/${isbn}`, { data: { username: user.Username } });
+                  alert('Book deleted successfully!');
+                  navigate('/admin');
+                } catch (error) {
+                  alert('Failed to delete book: ' + (error.response?.data?.error || error.message));
+                }
+              }}
+            >
+              Delete Book
             </button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => navigate('/admin')}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

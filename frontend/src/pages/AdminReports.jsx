@@ -38,7 +38,7 @@ const AdminReports = () => {
     const fetchDateSales = async () => {
         if (!selectedDate) return;
         try {
-            const response = await api.get(`/admin/reports/sales-by-date?date=${selectedDate}`);
+            const response = await api.get(`/admin/reports/sales-on-date?date=${selectedDate}`);
             setDateSales(response.data);
         } catch (error) {
             console.error('Error fetching date sales:', error);
@@ -67,13 +67,13 @@ const AdminReports = () => {
 
                 {/* Sales by Date */}
                 <div className="report-card">
-                    <h3>Sales by Date</h3>
+                    <h3>Sales on Date</h3>
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                         <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
                         <button onClick={fetchDateSales}>Search</button>
                     </div>
                     {dateSales && (
-                        <p>{dateSales.OrderCount} orders | ${(dateSales.TotalSales || 0).toFixed(2)}</p>
+                        <p>{dateSales.OrderCount} orders | ${Number(dateSales.TotalSales || 0).toFixed(2)}</p>
                     )}
                 </div>
 

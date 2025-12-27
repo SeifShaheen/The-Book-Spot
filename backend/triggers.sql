@@ -18,6 +18,7 @@ AFTER UPDATE ON Book
 FOR EACH ROW
 BEGIN
     DECLARE books_sold INT DEFAULT 0;
+    DECLARE pending_orders INT DEFAULT 0;
     DECLARE order_time DATETIME;
     DECLARE order_total DECIMAL(10, 2);
     
@@ -26,12 +27,23 @@ BEGIN
     FROM OrderItem
     WHERE ISBN = NEW.ISBN;
     
-    -- Only create supply order if:
-    -- 1. Stock dropped from above/equal threshold to below threshold
-    -- 2. Book has been sold at least once
-    IF OLD.StockQuantity >= OLD.Threshold 
-       AND NEW.StockQuantity < NEW.Threshold 
-       AND books_sold > 0 THEN
+    -- Check if there's already a pending supply order for this book
+    SELECT COUNT(*) INTO pending_orders
+    FROM SupplyOrderItem soi
+    JOIN SupplyOrder so ON soi.Username = so.Username 
+                        AND soi.PublisherID = so.PublisherID 
+                        AND soi.OrderDate = so.OrderDate
+    WHERE soi.ISBN = NEW.ISBN AND so.Status = 'Pending';
+    
+    -- Create supply order if:
+    -- 1. Stock is below threshold after update
+    -- 2. Stock decreased (someone bought)
+    -- 3. Book has been sold at least once
+    -- 4. No pending supply order exists for this book
+    IF NEW.StockQuantity < NEW.Threshold 
+       AND NEW.StockQuantity < OLD.StockQuantity
+       AND books_sold > 0 
+       AND pending_orders = 0 THEN
         
         -- Use a consistent timestamp for both inserts
         SET order_time = NOW();

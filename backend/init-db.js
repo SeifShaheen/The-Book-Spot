@@ -25,8 +25,8 @@ let currentFileIndex = 0;
 
 function runSqlFile(fileIndex) {
     if (fileIndex >= sqlFiles.length) {
-        console.log('\n✅ All SQL files executed successfully!');
-        createAdmin();
+        console.log('\nAll SQL files executed successfully!');
+        createUsers();
         return;
     }
 
@@ -34,7 +34,7 @@ function runSqlFile(fileIndex) {
     const filePath = path.join(__dirname, file.name);
 
     if (!fs.existsSync(filePath)) {
-        console.log(`⚠️  ${file.name} not found, skipping...`);
+        console.log(`${file.name} not found, skipping...`);
         runSqlFile(fileIndex + 1);
         return;
     }
@@ -42,12 +42,12 @@ function runSqlFile(fileIndex) {
     const sql = fs.readFileSync(filePath, 'utf8');
     const statements = sql.split(file.splitBy).map(s => s.trim()).filter(s => s.length > 0);
 
-    console.log(`\n📄 Running ${file.name} (${statements.length} statements)...`);
+    console.log(`\nRunning ${file.name} (${statements.length} statements)...`);
 
     let stmtIndex = 0;
     const runStatement = () => {
         if (stmtIndex >= statements.length) {
-            console.log(`✅ ${file.name} completed.`);
+            console.log(`${file.name} completed.`);
             runSqlFile(fileIndex + 1);
             return;
         }
@@ -59,9 +59,9 @@ function runSqlFile(fileIndex) {
                 if (err.code === 'ER_TRG_ALREADY_EXISTS' ||
                     err.code === 'ER_DUP_KEYNAME' ||
                     err.code === 'ER_DUP_ENTRY') {
-                    console.log(`   ⚠️  Skipping (already exists): ${err.code}`);
+                    console.log(`Skipping (already exists): ${err.code}`);
                 } else {
-                    console.error(`\n❌ Error in ${file.name} statement #${stmtIndex + 1}:`);
+                    console.error(`\nError in ${file.name} statement #${stmtIndex + 1}:`);
                     console.error(stmt.substring(0, 100) + '...');
                     console.error(`   ${err.code}: ${err.message}`);
                     // Continue anyway for non-critical errors
@@ -75,31 +75,50 @@ function runSqlFile(fileIndex) {
     runStatement();
 }
 
-function createAdmin() {
-    // First create a shopping cart for the admin
-    const cartSql = "INSERT INTO ShoppingCart () VALUES ()";
-    connection.query(cartSql, (err, cartResult) => {
+async function createUsers() {
+    const bcrypt = require('bcryptjs');
+
+    // Hash passwords
+    const adminPassword = await bcrypt.hash('admin123', 10);
+    const customerPassword = await bcrypt.hash('password123', 10);
+
+    // Create shopping carts for admin and customer
+    const cartSql = "INSERT INTO ShoppingCart () VALUES (), ()";
+    connection.query(cartSql, async (err, cartResult) => {
         if (err) {
-            console.error("Error creating admin cart:", err);
+            console.error("Error creating carts:", err);
             connection.end();
             process.exit(1);
             return;
         }
 
-        const cartId = cartResult.insertId;
+        const adminCartId = cartResult.insertId;
+        const customerCartId = adminCartId + 1;
 
         // Create admin with cart and default address
         const adminSql = `INSERT IGNORE INTO Admin 
             (Username, Password, FirstName, LastName, Email, CartID, 
              ShippingStreet, ShippingBuildingNo, ShippingCity, ShippingRegion, ShippingPostalCode, ShippingCountry) 
-            VALUES ('admin', 'admin123', 'System', 'Admin', 'admin@bookstore.com', ?, 
+            VALUES ('admin', ?, 'System', 'Admin', 'admin@bookstore.com', ?, 
                     '123 Admin Street', '1', 'Cairo', 'Cairo', '12345', 'Egypt')`;
 
-        connection.query(adminSql, [cartId], (err) => {
+        connection.query(adminSql, [adminPassword, adminCartId], (err) => {
             if (err) console.error("Error creating default admin:", err);
-            else console.log("👤 Default admin created (admin/admin123) with cart and address");
-            connection.end();
-            process.exit(0);
+            else console.log("Default admin created (admin/admin123)");
+
+            // Create sample customer
+            const customerSql = `INSERT IGNORE INTO Customer 
+                (Username, Password, FirstName, LastName, Email, Phone, CartID,
+                 ShippingStreet, ShippingBuildingNo, ShippingCity, ShippingRegion, ShippingPostalCode, ShippingCountry) 
+                VALUES ('johndoe', ?, 'John', 'Doe', 'john@example.com', '15551234567', ?,
+                        '123 Main St', '1', 'New York', 'NY', '10001', 'USA')`;
+
+            connection.query(customerSql, [customerPassword, customerCartId], (err) => {
+                if (err) console.error("Error creating sample customer:", err);
+                else console.log("Sample customer created (johndoe/password123)");
+                connection.end();
+                process.exit(0);
+            });
         });
     });
 }

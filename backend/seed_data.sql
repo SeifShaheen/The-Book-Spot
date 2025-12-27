@@ -64,10 +64,7 @@ INSERT INTO BookAuthor (ISBN, AuthorID) VALUES
 ('978-0393355673', 9),  -- Astrophysics for People in a Hurry by Neil deGrasse Tyson
 ('978-0767908184', 10); -- A Short History of Nearly Everything by Bill Bryson
 
--- Sample Customer
-INSERT INTO ShoppingCart (CartID) VALUES (1);
-INSERT INTO Customer (Username, FirstName, LastName, Email, Phone, Password, ShippingStreet, ShippingCity, ShippingCountry, CartID) VALUES
-('johndoe', 'John', 'Doe', 'john@example.com', '+1-555-1234', 'password123', '123 Main St', 'New York', 'USA', 1);
+-- Note: Sample Customer is created in init-db.js with hashed password
 
 -- Sample Order (for testing reports)
 INSERT INTO `Order` (OrderDate, Status, TotalPrice, Username) VALUES

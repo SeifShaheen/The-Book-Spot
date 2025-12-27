@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const bcrypt = require('bcryptjs');
 
 // Register Customer
 exports.register = (req, res) => {
@@ -7,6 +8,15 @@ exports.register = (req, res) => {
     // Basic validation
     if (!username || !password || !email) {
         return res.status(400).json({ message: 'Please provide required fields (username, password, email)' });
+    }
+
+    // First name and last name are required
+    if (!firstName || firstName.trim().length < 2) {
+        return res.status(400).json({ message: 'First name is required (min 2 characters)' });
+    }
+
+    if (!lastName || lastName.trim().length < 2) {
+        return res.status(400).json({ message: 'Last name is required (min 2 characters)' });
     }
 
     // Address validation - all required except building number
@@ -34,10 +44,13 @@ exports.register = (req, res) => {
 
         // Create Shopping Cart first
         const cartSql = 'INSERT INTO ShoppingCart () VALUES ()';
-        db.query(cartSql, (err, cartResult) => {
+        db.query(cartSql, async (err, cartResult) => {
             if (err) return res.status(500).json({ error: err.message });
 
             const cartId = cartResult.insertId;
+
+            // Hash password before storing
+            const hashedPassword = await bcrypt.hash(password, 10);
 
             // Insert Customer with all address fields
             const sql = `INSERT INTO Customer 
@@ -45,7 +58,7 @@ exports.register = (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
             const values = [
-                username, password, firstName, lastName, email, phone,
+                username, hashedPassword, firstName, lastName, email, phone,
                 address?.street, address?.buildingNo, address?.city, address?.region, address?.postalCode, address?.country, cartId
             ];
 
@@ -67,12 +80,12 @@ exports.login = (req, res) => {
 
     let sql = '';
     if (role === 'admin') {
-        sql = 'SELECT * FROM Admin WHERE Username = ? AND Password = ?';
+        sql = 'SELECT * FROM Admin WHERE Username = ?';
     } else {
-        sql = 'SELECT * FROM Customer WHERE Username = ? AND Password = ?';
+        sql = 'SELECT * FROM Customer WHERE Username = ?';
     }
 
-    db.query(sql, [username, password], (err, results) => {
+    db.query(sql, [username], async (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
 
         if (results.length === 0) {
@@ -80,6 +93,13 @@ exports.login = (req, res) => {
         }
 
         const user = results[0];
+
+        // Compare password with hashed password
+        const isMatch = await bcrypt.compare(password, user.Password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
         // Remove password from response
         delete user.Password;
 
@@ -96,16 +116,37 @@ exports.updateProfile = (req, res) => {
     const { username } = req.params;
     const { firstName, lastName, phone, address } = req.body;
 
+    // Validation
+    if (!firstName || firstName.trim().length < 2) {
+        return res.status(400).json({ message: 'First name is required (min 2 characters)' });
+    }
+    if (!lastName || lastName.trim().length < 2) {
+        return res.status(400).json({ message: 'Last name is required (min 2 characters)' });
+    }
+    if (phone && !/^\d{11}$/.test(phone)) {
+        return res.status(400).json({ message: 'Phone number must be exactly 11 digits' });
+    }
+    if (!address || !address.street || !address.city || !address.region || !address.postalCode || !address.country) {
+        return res.status(400).json({ message: 'All address fields are required (street, city, region, postal code, country)' });
+    }
+    if (!/^\d{5}$/.test(address.postalCode)) {
+        return res.status(400).json({ message: 'Postal code must be exactly 5 digits' });
+    }
+
     const sql = `UPDATE Customer SET 
-        FirstName = COALESCE(?, FirstName),
-        LastName = COALESCE(?, LastName),
-        Phone = COALESCE(?, Phone),
-        ShippingStreet = COALESCE(?, ShippingStreet),
-        ShippingCity = COALESCE(?, ShippingCity),
-        ShippingCountry = COALESCE(?, ShippingCountry)
+        FirstName = ?,
+        LastName = ?,
+        Phone = ?,
+        ShippingStreet = ?,
+        ShippingBuildingNo = ?,
+        ShippingCity = ?,
+        ShippingRegion = ?,
+        ShippingPostalCode = ?,
+        ShippingCountry = ?
         WHERE Username = ?`;
 
-    const values = [firstName, lastName, phone, address?.street, address?.city, address?.country, username];
+    const values = [firstName, lastName, phone || null, address.street, address.buildingNo || null,
+        address.city, address.region, address.postalCode, address.country, username];
 
     db.query(sql, values, (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -117,7 +158,10 @@ exports.updateProfile = (req, res) => {
 // Get Customer Profile
 exports.getProfile = (req, res) => {
     const { username } = req.params;
-    const sql = 'SELECT Username, FirstName, LastName, Email, Phone, ShippingStreet, ShippingCity, ShippingCountry FROM Customer WHERE Username = ?';
+    const sql = `SELECT Username, FirstName, LastName, Email, Phone, 
+                 ShippingStreet, ShippingBuildingNo, ShippingCity, ShippingRegion, 
+                 ShippingPostalCode, ShippingCountry 
+                 FROM Customer WHERE Username = ?`;
 
     db.query(sql, [username], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -146,21 +190,35 @@ exports.updateAdminProfile = (req, res) => {
     const { username } = req.params;
     const { firstName, lastName, address } = req.body;
 
+    // Validation
+    if (!firstName || firstName.trim().length < 2) {
+        return res.status(400).json({ message: 'First name is required (min 2 characters)' });
+    }
+    if (!lastName || lastName.trim().length < 2) {
+        return res.status(400).json({ message: 'Last name is required (min 2 characters)' });
+    }
+    if (!address || !address.street || !address.city || !address.region || !address.postalCode || !address.country) {
+        return res.status(400).json({ message: 'All address fields are required (street, city, region, postal code, country)' });
+    }
+    if (!/^\d{5}$/.test(address.postalCode)) {
+        return res.status(400).json({ message: 'Postal code must be exactly 5 digits' });
+    }
+
     const sql = `UPDATE Admin SET 
-        FirstName = COALESCE(?, FirstName),
-        LastName = COALESCE(?, LastName),
-        ShippingStreet = COALESCE(?, ShippingStreet),
-        ShippingBuildingNo = COALESCE(?, ShippingBuildingNo),
-        ShippingCity = COALESCE(?, ShippingCity),
-        ShippingRegion = COALESCE(?, ShippingRegion),
-        ShippingPostalCode = COALESCE(?, ShippingPostalCode),
-        ShippingCountry = COALESCE(?, ShippingCountry)
+        FirstName = ?,
+        LastName = ?,
+        ShippingStreet = ?,
+        ShippingBuildingNo = ?,
+        ShippingCity = ?,
+        ShippingRegion = ?,
+        ShippingPostalCode = ?,
+        ShippingCountry = ?
         WHERE Username = ?`;
 
     const values = [
         firstName, lastName,
-        address?.street, address?.buildingNo, address?.city,
-        address?.region, address?.postalCode, address?.country,
+        address.street, address.buildingNo || null, address.city,
+        address.region, address.postalCode, address.country,
         username
     ];
 
@@ -172,7 +230,7 @@ exports.updateAdminProfile = (req, res) => {
 };
 // Register Admin (Superadmin only - username 'Admin')
 exports.registerAdmin = (req, res) => {
-    const { username, password, firstName, lastName, email, currentUser } = req.body;
+    const { username, password, firstName, lastName, email, phone, address, currentUser } = req.body;
 
     // Check if the requesting user is the superadmin
     if (!currentUser || currentUser !== 'admin') {
@@ -192,6 +250,30 @@ exports.registerAdmin = (req, res) => {
         return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
+    // First name and last name are required
+    if (!firstName || firstName.trim().length < 2) {
+        return res.status(400).json({ message: 'First name is required (min 2 characters)' });
+    }
+
+    if (!lastName || lastName.trim().length < 2) {
+        return res.status(400).json({ message: 'Last name is required (min 2 characters)' });
+    }
+
+    // Address validation - all required except building number
+    if (!address || !address.street || !address.city || !address.region || !address.postalCode || !address.country) {
+        return res.status(400).json({ message: 'All address fields are required (street, city, region, postal code, country)' });
+    }
+
+    // Postal code validation (5 digits only)
+    if (!/^\d{5}$/.test(address.postalCode)) {
+        return res.status(400).json({ message: 'Postal code must be exactly 5 digits' });
+    }
+
+    // Phone validation (11 digits only, if provided)
+    if (phone && !/^\d{11}$/.test(phone)) {
+        return res.status(400).json({ message: 'Phone number must be exactly 11 digits' });
+    }
+
     // Check if admin exists
     const checkSql = 'SELECT * FROM Admin WHERE Username = ? OR Email = ?';
     db.query(checkSql, [username, email], (err, results) => {
@@ -202,19 +284,22 @@ exports.registerAdmin = (req, res) => {
 
         // Create Shopping Cart first
         const cartSql = 'INSERT INTO ShoppingCart () VALUES ()';
-        db.query(cartSql, (err, cartResult) => {
+        db.query(cartSql, async (err, cartResult) => {
             if (err) return res.status(500).json({ error: err.message });
 
             const cartId = cartResult.insertId;
 
-            // Insert Admin with cart and default address
+            // Hash password before storing
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Insert Admin with cart and address from form
             const sql = `INSERT INTO Admin 
                 (Username, Password, FirstName, LastName, Email, CartID, 
                  ShippingStreet, ShippingBuildingNo, ShippingCity, ShippingRegion, ShippingPostalCode, ShippingCountry) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             const values = [
-                username, password, firstName || null, lastName || null, email, cartId,
-                '123 Admin Street', '1', 'Cairo', 'Cairo', '12345', 'Egypt'
+                username, hashedPassword, firstName, lastName, email, cartId,
+                address.street, address.buildingNo || null, address.city, address.region, address.postalCode, address.country
             ];
 
             db.query(sql, values, (err, result) => {
