@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
+import api from '../api/axios';
+import { useNavigate, Link } from 'react-router-dom';
+import Layout from '../components/Layout';
 import { useToast } from '../context/ToastContext';
-
-// ...
 
 const AddAdmin = () => {
     const navigate = useNavigate();
@@ -31,7 +33,76 @@ const AddAdmin = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    // ... (handleChange and validate same)
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        // Phone: only numbers, max 11 digits
+        if (name === 'phone') {
+            const numbersOnly = value.replace(/\D/g, '').slice(0, 11);
+            setFormData(prev => ({ ...prev, phone: numbersOnly }));
+            return;
+        }
+
+        // Postal code: only numbers, max 5 digits
+        if (name === 'address.postalCode') {
+            const numbersOnly = value.replace(/\D/g, '').slice(0, 5);
+            setFormData(prev => ({
+                ...prev,
+                address: { ...prev.address, postalCode: numbersOnly }
+            }));
+            return;
+        }
+
+        // Address nested fields
+        if (name.startsWith('address.')) {
+            const field = name.split('.')[1];
+            setFormData(prev => ({
+                ...prev,
+                address: { ...prev.address, [field]: value }
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
+
+        // Clear error when user types
+        if (errors[name]) {
+            setErrors({ ...errors, [name]: '' });
+        }
+    };
+
+    const validate = () => {
+        const newErrors = {};
+        if (!formData.username || formData.username.length < 3) {
+            newErrors.username = 'Username must be at least 3 characters';
+        }
+        if (!formData.password || formData.password.length < 6) {
+            newErrors.password = 'Password must be at least 6 characters';
+        }
+        if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
+        if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = 'Valid email is required';
+        }
+        if (!formData.firstName || formData.firstName.trim().length < 2) {
+            newErrors.firstName = 'First name is required';
+        }
+        if (!formData.lastName || formData.lastName.trim().length < 2) {
+            newErrors.lastName = 'Last name is required';
+        }
+
+        // Address validation
+        if (!formData.address.street) newErrors.street = 'Street is required';
+        if (!formData.address.city) newErrors.city = 'City is required';
+        if (!formData.address.region) newErrors.region = 'Region is required';
+        if (!formData.address.postalCode || formData.address.postalCode.length !== 5) {
+            newErrors.postalCode = 'Postal code must be 5 digits';
+        }
+        if (!formData.address.country) newErrors.country = 'Country is required';
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
