@@ -95,6 +95,12 @@ body {
     font-size: 1.5rem;
 }
 
+.logo-icon-svg {
+    height: 32px;
+    width: 32px;
+    color: #365195;
+}
+
 .logo-text {
     font-size: 2rem;
     font-weight: 800;
