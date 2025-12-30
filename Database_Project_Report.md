@@ -55,7 +55,7 @@
 
 ### 1.7 Reporting System
 - **Monthly Sales Report**: Total sales in the last 30 days
-- **Sales by Date**: Query sales for a specific date
+- **Sales on Date**: Query sales for a specific date
 - **Top 5 Customers**: Customers ranked by total spending (last 3 months)
 - **Top 10 Best-Selling Books**: Books ranked by sales volume (last 3 months)
 - **Book Reorder Statistics**: Count of reorder events per book
