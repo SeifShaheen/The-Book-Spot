@@ -211,11 +211,3 @@ After running seed data, you can use these accounts:
 ### Customer Accounts
 - **Username:** `johndoe` | **Password:** `password123`
 - **Username:** `janedoe` | **Password:** `password123`
-
-## 📝 License
-
-ISC License
-
----
-
-Made with ❤️ for Database Course - Term 5
