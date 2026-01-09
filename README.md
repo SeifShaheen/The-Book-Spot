@@ -1,4 +1,4 @@
-# 📚 Book-Store
+# 📚 The book Spot
 
 A full-stack online bookstore application built with React and Node.js, featuring customer shopping, admin management, and comprehensive inventory control.
 
